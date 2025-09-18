@@ -18,6 +18,16 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../app_resources.qrc">
+    <normaloff>:/images/GenBBS Logo.jpeg</normaloff>:/images/GenBBS Logo.jpeg</iconset>
+  </property>
+  <property name="iconSize">
+   <size>
+    <width>50</width>
+    <height>50</height>
+   </size>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -56,6 +66,12 @@
           <size>
            <width>120</width>
            <height>40</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>120</width>
+           <height>120</height>
           </size>
          </property>
          <property name="palette">
@@ -145,9 +161,9 @@
             <colorrole role="Base">
              <brush brushstyle="SolidPattern">
               <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
+               <red>170</red>
+               <green>0</green>
+               <blue>0</blue>
               </color>
              </brush>
             </colorrole>
@@ -300,9 +316,9 @@
             <colorrole role="Base">
              <brush brushstyle="SolidPattern">
               <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
+               <red>170</red>
+               <green>0</green>
+               <blue>0</blue>
               </color>
              </brush>
             </colorrole>
@@ -538,19 +554,26 @@
           </font>
          </property>
          <property name="autoFillBackground">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="styleSheet">
-          <string notr="true">box-shadow: 3px 3px 6px rgb(0, 0, 0);</string>
+          <string notr="true">border: 1px solid white;
+background-color: rgb(170, 0, 0);</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::Shape::HLine</enum>
          </property>
          <property name="text">
-          <string>GenBBS</string>
+          <string/>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::MarkdownText</enum>
+         </property>
+         <property name="pixmap">
+          <pixmap resource="../app_resources.qrc">:/images/GenBBS Logo.jpeg</pixmap>
+         </property>
+         <property name="scaledContents">
+          <bool>true</bool>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -574,9 +597,17 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuGenBBS">
+    <property name="title">
+     <string>GenBBS</string>
+    </property>
+   </widget>
+   <addaction name="menuGenBBS"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="../app_resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
