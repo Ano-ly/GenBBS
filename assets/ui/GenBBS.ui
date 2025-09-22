@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>638</width>
-    <height>651</height>
+    <width>640</width>
+    <height>653</height>
    </rect>
   </property>
   <property name="font">
@@ -20,7 +20,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../app_resources.qrc">
-    <normaloff>:/images/GenBBS Logo.jpeg</normaloff>:/images/GenBBS Logo.jpeg</iconset>
+    <normaloff>:/images/GenBBS Logo.png</normaloff>:/images/GenBBS Logo.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -539,8 +539,7 @@
        <bool>false</bool>
       </property>
       <property name="styleSheet">
-       <string notr="true">border: 1px solid white;
-background-color: rgb(170, 0, 0);</string>
+       <string notr="true"/>
       </property>
       <property name="frameShape">
        <enum>QFrame::Shape::HLine</enum>
@@ -552,7 +551,7 @@ background-color: rgb(170, 0, 0);</string>
        <enum>Qt::TextFormat::MarkdownText</enum>
       </property>
       <property name="pixmap">
-       <pixmap resource="../app_resources.qrc">:/images/GenBBS Logo.jpeg</pixmap>
+       <pixmap resource="../app_resources.qrc">:/images/GenBBS Logo.png</pixmap>
       </property>
       <property name="scaledContents">
        <bool>true</bool>
@@ -568,24 +567,27 @@ background-color: rgb(170, 0, 0);</string>
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout" columnstretch="0" rowminimumheight="0">
       <item row="0" column="0">
-       <widget class="QFrame" name="frame">
+       <widget class="QFrame" name="welcomeFrame">
         <property name="autoFillBackground">
          <bool>false</bool>
         </property>
         <property name="styleSheet">
-         <string notr="true">QFrame {
-background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgb(255, 126, 126),stop:1 rgb(255, 255, 255)); color: rgb(255, 255, 255);
-border: 3pt solid rgb(170, 0, 0);
+         <string notr="true">#welcomeFrame {
+	
+	background-image: url(:/images/Reinf_Backdrop.jpeg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
 }
 
 QPushButton {
-background-color : rgb(99, 99, 99);
+background-color :rgb(255, 253, 234);
 border-radius: 5px;
-color: white;
+color: black;
 }
 
 QPushButton:hover {
-    background-color: rgb(143, 143, 143);
+    background-color: rgb(229, 224, 174);
     color: white;
     border: 3pt solid rgb(170, 0, 0);
     border-radius: 6px;
@@ -607,7 +609,7 @@ QPushButton:hover {
           <number>100</number>
          </property>
          <item row="0" column="1">
-          <spacer name="verticalSpacer">
+          <spacer name="vSpacer0_1">
            <property name="orientation">
             <enum>Qt::Orientation::Vertical</enum>
            </property>
@@ -620,7 +622,7 @@ QPushButton:hover {
           </spacer>
          </item>
          <item row="3" column="2">
-          <spacer name="horizontalSpacer_5">
+          <spacer name="hSpacer0_2">
            <property name="orientation">
             <enum>Qt::Orientation::Horizontal</enum>
            </property>
@@ -645,13 +647,13 @@ QPushButton:hover {
            </property>
            <property name="minimumSize">
             <size>
-             <width>250</width>
+             <width>200</width>
              <height>150</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>250</width>
+             <width>200</width>
              <height>250</height>
             </size>
            </property>
@@ -664,8 +666,8 @@ QPushButton:hover {
            <property name="font">
             <font>
              <family>Segoe UI</family>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
+             <pointsize>17</pointsize>
+             <bold>false</bold>
              <strikeout>false</strikeout>
             </font>
            </property>
@@ -689,7 +691,7 @@ File</string>
           </widget>
          </item>
          <item row="3" column="0">
-          <spacer name="horizontalSpacer_4">
+          <spacer name="hSpacer0_1">
            <property name="orientation">
             <enum>Qt::Orientation::Horizontal</enum>
            </property>
@@ -730,7 +732,7 @@ File</string>
            <property name="font">
             <font>
              <family>Segoe UI</family>
-             <pointsize>30</pointsize>
+             <pointsize>40</pointsize>
              <bold>true</bold>
              <strikeout>false</strikeout>
             </font>
@@ -765,7 +767,7 @@ File</string>
           </widget>
          </item>
          <item row="4" column="1">
-          <spacer name="verticalSpacer_2">
+          <spacer name="vSpacer0_3">
            <property name="orientation">
             <enum>Qt::Orientation::Vertical</enum>
            </property>
@@ -781,7 +783,7 @@ File</string>
           </spacer>
          </item>
          <item row="2" column="1">
-          <spacer name="verticalSpacer_3">
+          <spacer name="vSpacer0_2">
            <property name="orientation">
             <enum>Qt::Orientation::Vertical</enum>
            </property>
@@ -805,7 +807,7 @@ File</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>638</width>
+     <width>640</width>
      <height>22</height>
     </rect>
    </property>

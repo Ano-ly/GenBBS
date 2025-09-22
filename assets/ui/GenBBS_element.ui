@@ -20,7 +20,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../app_resources.qrc">
-    <normaloff>:/images/GenBBS Logo.jpeg</normaloff>:/images/GenBBS Logo.jpeg</iconset>
+    <normaloff>:/images/GenBBS Logo.png</normaloff>:/images/GenBBS Logo.png</iconset>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
@@ -34,7 +34,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QFrame" name="frame">
+     <widget class="QFrame" name="frame1Catg1">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
         <horstretch>0</horstretch>
@@ -67,7 +67,7 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QFrame" name="frame_3">
+        <widget class="QFrame" name="frameLeftElement">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>3</horstretch>
@@ -114,7 +114,7 @@
            <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
           </property>
           <item>
-           <widget class="QLabel" name="label1Catg">
+           <widget class="QLabel" name="label1Element">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -151,7 +151,14 @@
              <bool>false</bool>
             </property>
             <property name="styleSheet">
-             <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgb(170, 0, 0), stop:1 rgb(255, 255, 255)); color: rgb(255, 255, 255)</string>
+             <string notr="true">
+	
+	background-image: url(:/images/Reinf_Backdrop.jpeg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+color: white;
+</string>
             </property>
             <property name="text">
              <string>Placeholder for element name, i.e [BEAM 01]</string>
@@ -159,7 +166,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="label2Element">
             <property name="font">
              <font>
               <family>Segoe UI</family>
@@ -173,7 +180,7 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="catgLayout1" stretch="0,0,0">
+           <layout class="QHBoxLayout" name="layoutElement1" stretch="0,0,0">
             <property name="spacing">
              <number>5</number>
             </property>
@@ -193,7 +200,7 @@
              <number>300</number>
             </property>
             <item>
-             <widget class="QLineEdit" name="newInputCatg">
+             <widget class="QLineEdit" name="inputNumElement">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -332,7 +339,7 @@ padding-left: 5px;
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="createCatg">
+             <widget class="QPushButton" name="btnDoneElement">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -602,7 +609,7 @@ padding-left: 5px;
              </widget>
             </item>
             <item>
-             <spacer name="hSpacerCatg">
+             <spacer name="hSpacer3_1">
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
@@ -617,7 +624,7 @@ padding-left: 5px;
            </layout>
           </item>
           <item>
-           <widget class="QPushButton" name="editElement">
+           <widget class="QPushButton" name="btnEditElement">
             <property name="enabled">
              <bool>true</bool>
             </property>
@@ -661,7 +668,7 @@ padding-left: 5px;
            </widget>
           </item>
           <item>
-           <spacer name="vSpacerCatg">
+           <spacer name="vSpacer3_1">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
             </property>
@@ -677,7 +684,7 @@ padding-left: 5px;
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="frame_2">
+        <widget class="QFrame" name="label2Catg1_2">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>2</horstretch>
@@ -710,7 +717,7 @@ QPushButton:hover {
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,0,25,0">
           <item>
-           <widget class="QLabel" name="label2Catg">
+           <widget class="QLabel" name="label2Catg1">
             <property name="font">
              <font>
               <family>Segoe UI</family>
@@ -725,14 +732,14 @@ QPushButton:hover {
            </widget>
           </item>
           <item>
-           <widget class="Line" name="lineCatg">
+           <widget class="Line" name="lineCatg1">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="frame_4">
+           <widget class="QFrame" name="frame2Catg1">
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -755,7 +762,7 @@ QPushButton:hover {
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="btnExportCatg1">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>

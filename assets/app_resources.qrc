@@ -1,6 +1,16 @@
 <RCC>
   <qresource prefix="/">
     <file>images/done.jpeg</file>
-    <file>images/GenBBS Logo.jpeg</file>
+    <file>images/GenBBS Logo.png</file>
+    <file>images/Reinf_Dispersed_Backdrop.jpeg</file>
+    <file>images/Reinf_Backdrop.jpeg</file>
+    <file>images/Back_Button.jpg</file>
+    <file>ui/GenBBS.ui</file>
+    <file>ui/GenBBS_catg1.ui</file>
+    <file>ui/GenBBS_catg2.ui</file>
+    <file>ui/GenBBS_element.ui</file>
+    <file>ui/GenBBS_loading.ui</file>
+    <file>ui/GenBBS_newprj.ui</file>
+    <file>ui/GenBBS_reinf.ui</file>
   </qresource>
 </RCC>

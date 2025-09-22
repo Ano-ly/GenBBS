@@ -20,12 +20,12 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../app_resources.qrc">
-    <normaloff>:/images/GenBBS Logo.jpeg</normaloff>:/images/GenBBS Logo.jpeg</iconset>
+    <normaloff>:/images/GenBBS Logo.png</normaloff>:/images/GenBBS Logo.png</iconset>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="centralwidgetCatg1">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
      <horstretch>0</horstretch>
@@ -34,7 +34,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QFrame" name="frame">
+     <widget class="QFrame" name="frame1Catg1">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
         <horstretch>0</horstretch>
@@ -67,7 +67,7 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QFrame" name="frame_3">
+        <widget class="QFrame" name="frameLeftCatg1">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>3</horstretch>
@@ -103,7 +103,7 @@ background-color:rgb(139, 243, 59)
            <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
           </property>
           <item>
-           <widget class="QLabel" name="label1Catg">
+           <widget class="QLabel" name="label1Catg1">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -140,7 +140,14 @@ background-color:rgb(139, 243, 59)
              <bool>false</bool>
             </property>
             <property name="styleSheet">
-             <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgb(170, 0, 0), stop:1 rgb(255, 255, 255)); color: rgb(255, 255, 255)</string>
+             <string notr="true">
+	
+	background-image: url(:/images/Reinf_Backdrop.jpeg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+color: white;
+</string>
             </property>
             <property name="text">
              <string> Create New Category</string>
@@ -148,7 +155,7 @@ background-color:rgb(139, 243, 59)
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="catgLayout1" stretch="6,2,1">
+           <layout class="QHBoxLayout" name="layout1Catg" stretch="6,2,1">
             <property name="spacing">
              <number>5</number>
             </property>
@@ -168,7 +175,7 @@ background-color:rgb(139, 243, 59)
              <number>300</number>
             </property>
             <item>
-             <widget class="QLineEdit" name="newInputCatg">
+             <widget class="QLineEdit" name="newInputCatg1">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -307,7 +314,7 @@ padding-left: 5px;
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="createCatg">
+             <widget class="QPushButton" name="btnCreateCatg1">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -569,7 +576,7 @@ padding-left: 5px;
              </widget>
             </item>
             <item>
-             <spacer name="hSpacerCatg">
+             <spacer name="hSpacer1_1">
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
@@ -584,7 +591,7 @@ padding-left: 5px;
            </layout>
           </item>
           <item>
-           <spacer name="vSpacerCatg">
+           <spacer name="vSpacer1_1">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
             </property>
@@ -600,7 +607,7 @@ padding-left: 5px;
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="frame_2">
+        <widget class="QFrame" name="frameRightCatg1">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>2</horstretch>
@@ -633,7 +640,7 @@ QPushButton:hover {
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,0,25,0">
           <item>
-           <widget class="QLabel" name="label2Catg">
+           <widget class="QLabel" name="label2Catg1">
             <property name="font">
              <font>
               <family>Segoe UI</family>
@@ -648,14 +655,14 @@ QPushButton:hover {
            </widget>
           </item>
           <item>
-           <widget class="Line" name="lineCatg">
+           <widget class="Line" name="lineCatg1">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="frame_4">
+           <widget class="QFrame" name="frame2Catg1">
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -665,26 +672,22 @@ QPushButton:hover {
             <property name="frameShadow">
              <enum>QFrame::Shadow::Raised</enum>
             </property>
-            <widget class="QTreeView" name="treeViewCatg">
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>10</y>
-               <width>311</width>
-               <height>361</height>
-              </rect>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QTreeView" name="treeViewCatg1">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="btnExportCatg1">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
