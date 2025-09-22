@@ -1,5 +1,8 @@
 import uuid
 from datetime import datetime
+import math
+from src.config import CUT_LENGTH_FORMULAS, MIN_BEND_RADII
+from typing import Union
 
 class Bar:   
     """
@@ -15,15 +18,42 @@ class Bar:
         self.cut_length = self.calculate_cut_length()
         self.unit_weight, self.total_weight = self.calculate_weight()
 
+    def _get_bend_radius(self) -> float:
+        """
+        Determines the bend radius based on the bar's diameter and assumed steel type,
+        using MIN_BEND_RADII from config.py. If the diameter is not found, it falls back
+        to a default calculation (e.g., 4 times the diameter for smaller bars, 5 or 6 for larger).
+        """
+        numeric_diameter = float(''.join(filter(str.isdigit, self.diameter)))
+        
+        # Look up bend radius in the predefined dictionary
+        bend_radius = MIN_BEND_RADII.get(numeric_diameter)
+        
+        if bend_radius is None:
+            # Fallback calculation if diameter not found in MIN_BEND_RADII
+            # These factors are illustrative and should be verified against BS 8660:2020
+            if numeric_diameter <= 16:
+                bend_radius = 2 * numeric_diameter
+            else:
+                bend_radius = 3.5 * numeric_diameter
+
+            print(f"Warning: Minimum bend radius for diameter {numeric_diameter}mm not found in config. Using calculated value: {bend_radius}mm.")
+            
+        return bend_radius
+
     def calculate_cut_length(self) -> float:
         """
-        Implements the logic for each shape code to determine the developed length.
-        This method will be crucial for BS 8660:2020 compliance, handling bend allowances and deductions.
-        (Implementation details for specific shape codes will go here)
+        Calculates the cut length of the bar based on its shape code and BS 8660:2020 formulas.
+        Dispatches to the appropriate function from CUT_LENGTH_FORMULAS.
         """
-        # Placeholder for actual BS 8660:2020 calculation logic
-        # For now, a simple sum of lengths for demonstration
-        return sum(self.lengths.values()) / 1000.0 # Convert mm to meters
+        calculator_func = CUT_LENGTH_FORMULAS.get(self.shape_code)
+        if calculator_func:
+            bend_radius = self._get_bend_radius()
+            return calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius)
+        else:
+            # Fallback for unknown shape codes, or raise an error
+            print(f"Warning: No cut length formula found for shape code {self.shape_code}. Summing lengths.")
+            return sum(self.lengths.values()) / 1000.0 # Convert mm to meters
 
     def calculate_weight(self) -> tuple[float, float]:
         """
@@ -106,8 +136,10 @@ class Element:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Element':
+        if "name" not in data:
+            raise ValueError("Element name is required.")
         element = cls(name=data["name"])
-        element.element_id = data.get("element_id", str(uuid.uuid4())) # Ensure element_id is set, generate if missing
+        element.element_id = data.get("element_id", str(uuid.uuid4()))
         element.bars = [Bar.from_dict(bar_data) for bar_data in data.get("bars", [])]
         return element
 

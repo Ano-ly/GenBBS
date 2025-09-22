@@ -88,7 +88,7 @@ def calculate_cut_length_shape_22(lengths: dict, diameter: float, bend_radius: f
     Calculates cut length for Shape Code 22 (two bends).
     Formula: A + B + 0.57C + D - 0.5r - 2.6d
     C shall not be less than 2(r + d).
-    Neither A nor (D) shall be less than P in Table 2. (D) shall not be less than C/2 + 5d.
+    Neither A nor (D) shall be less than P in Table 2. (D) shall not be less than C/2 + 5d or 90
     """
     A = lengths.get("A", 0)
     B = lengths.get("B", 0)
@@ -327,7 +327,7 @@ def calculate_cut_length_shape_52(lengths: dict, diameter: float, bend_radius: f
     A = lengths.get("A", 0)
     B = lengths.get("B", 0)
     C = lengths.get("C", 0)
-    return ((2 * (A + B)) + (2*C) - (1.5 * bend_radius) - (3 * diameter)) / 1000.0
+    return ((2 * (A + B)) + (2 * C) - (1.5 * bend_radius) - (3 * diameter)) / 1000.0
 
 
 def calculate_cut_length_shape_56(lengths: dict, diameter: float, bend_radius: float) -> float:
