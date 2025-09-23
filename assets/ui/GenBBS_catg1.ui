@@ -88,6 +88,15 @@ padding-right: 5px;
 #btnCreateCatg1:hover {
 background-color:rgb(139, 243, 59)
 }
+#btnSaveCatg1 {
+border-radius: 5px;
+color: black;
+padding-left: 5px;
+padding-right: 5px;
+}
+#btnSaveCatg1:hover {
+background-color:rgb(170, 170, 170)
+}
 #btnBackCatg1 {
 
 border-radius: 5px;
@@ -113,39 +122,70 @@ background-color:rgb(170, 170, 170)
            <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
           </property>
           <item>
-           <widget class="QPushButton" name="btnBackCatg1">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Segoe UI</family>
-              <pointsize>9</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Back</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../app_resources.qrc">
-              <normaloff>:/images/Back_Button.jpg</normaloff>:/images/Back_Button.jpg</iconset>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
+            <item>
+             <widget class="QPushButton" name="btnBackCatg1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>60</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>60</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Back</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../app_resources.qrc">
+                <normaloff>:/images/Back_Button.jpg</normaloff>:/images/Back_Button.jpg</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnSaveCatg1">
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Save</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../app_resources.qrc">
+                <normaloff>:/images/Save button.png</normaloff>:/images/Save button.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QLabel" name="label1Catg1">

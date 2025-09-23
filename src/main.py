@@ -4,8 +4,8 @@ from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter # Re-adding QPixmap and QPainter
 import resources
 from src.logic.data_models import Project
-import json # New import for JSON serialization
-import os   # New import for path manipulation
+import json
+import os
 
 # --- Screen Classes (will eventually be in separate files) ---
 class LoadingScreenWidget(QWidget):
@@ -43,8 +43,27 @@ class MainMenuScreen(QWidget):
         file_dialog.setFileMode(QFileDialog.ExistingFile)
         if file_dialog.exec():
             selected_file = file_dialog.selectedFiles()[0]
-            print(f"Selected file: {selected_file}")
-            # TODO: Implement logic to load the selected project file
+            self.load_project_from_file(selected_file)
+
+    def load_project_from_file(self, file_path):
+        try:
+            with open(file_path, 'r') as f:
+                project_data = json.load(f)
+            
+            loaded_project = Project.from_dict(project_data)
+
+            self.app_window.current_project = loaded_project
+            self.app_window.project_modified = False
+            self.app_window.current_project_file_path = file_path
+            self.app_window.go_to_category1_screen() # Navigate to the main project screen
+        except json.JSONDecodeError:
+            QMessageBox.warning(self, "File Error", "Selected file is not a valid JSON file or is corrupted.")
+        except (KeyError, ValueError) as e:
+            QMessageBox.warning(self, "File Error", f"Invalid project file format: {e}. The file does not conform to the expected project structure.")
+        except FileNotFoundError:
+            QMessageBox.warning(self, "File Error", "Selected file not found.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
 
 class NewProjectScreen(QWidget):
     def __init__(self, parent=None):
@@ -68,10 +87,12 @@ class NewProjectScreen(QWidget):
     def create_project_in_memory(self):
         project_name_input = self.loaded_ui.findChild(QLineEdit, "inputNameNewprj")
         if project_name_input:
-            project_name = project_name_input.text()
+            project_name = project_name_input.text().strip() # Strip whitespace
             if project_name:
                 new_project = Project(name=project_name)
                 self.app_window.current_project = new_project
+                self.app_window.project_modified = True
+                self.app_window.current_project_file_path = None
                 self.app_window.go_to_category1_screen()
             else:
                 QMessageBox.warning(self, "Input Error", "Project name cannot be empty.")
@@ -90,8 +111,16 @@ class Category1Screen(QWidget):
         back_button = self.loaded_ui.findChild(QPushButton, "btnBackCatg1")
         if back_button:
             back_button.clicked.connect(self.prompt_save_project) # Connect to new method
+        
+        save_button = self.loaded_ui.findChild(QPushButton, "btnSaveCatg1") # Assuming the save button's object name is btnSave
+        if save_button:
+            save_button.clicked.connect(self.save_current_project)
 
     def prompt_save_project(self):
+        if not self.app_window.project_modified:
+            self.app_window.go_to_main_menu_screen()
+            return
+
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Save Project")
         msg_box.setText("Do you want to save changes to your project?")
@@ -103,20 +132,26 @@ class Category1Screen(QWidget):
         if ret == QMessageBox.Save:
             self.save_project_and_go_back() # Call method to save and then navigate
         elif ret == QMessageBox.Discard:
-            self.app_window.go_to_new_project_screen() # Navigate without saving
+            self.app_window.go_to_main_menu_screen() # Navigate without saving
         # If ret == QMessageBox.Cancel, we do nothing, and the screen will not change.
 
-    def save_project_and_go_back(self):
+    def save_current_project(self):
+        if not self.app_window.project_modified:
+            QMessageBox.information(self, "No Changes", "No changes have been made since the last save.")
+            return True # Indicate that no saving was needed, but operation was successful
+
         if self.app_window.current_project:
-            options = QFileDialog.Options()
-            # Suggest a default filename based on the project name
-            default_filename = self.app_window.current_project.name + ".gbbs"
-            file_name, _ = QFileDialog.getSaveFileName(self, "Save Project",
-                                                       default_filename,
-                                                       "GenBBS Project Files (*.gbbs);;All Files (*)",
-                                                       options=options)
+            file_name = self.app_window.current_project_file_path
+
+            if not file_name:
+                options = QFileDialog.Options()
+                default_filename = self.app_window.current_project.name + ".gbbs"
+                file_name, _ = QFileDialog.getSaveFileName(self, "Save Project",
+                                                           default_filename,
+                                                           "GenBBS Project Files (*.gbbs);;All Files (*)",
+                                                           options=options)
+
             if file_name:
-                # Ensure the file has the .gbbs extension
                 if not file_name.endswith(".gbbs"):
                     file_name += ".gbbs"
                 try:
@@ -124,15 +159,22 @@ class Category1Screen(QWidget):
                     with open(file_name, 'w') as f:
                         json.dump(project_data, f, indent=4)
                     QMessageBox.information(self, "Save Successful", f"Project saved to {os.path.basename(file_name)}")
-                    self.app_window.go_to_new_project_screen() # Navigate after successful save
+                    self.app_window.project_modified = False
+                    self.app_window.current_project_file_path = file_name
+                    return True # Indicate successful save
                 except Exception as e:
                     QMessageBox.critical(self, "Save Error", f"Could not save project: {e}")
+                    return False # Indicate failed save
             else:
-                # User cancelled the file dialog, stay on current screen
-                pass
+                return False # User cancelled save dialog
         else:
             QMessageBox.warning(self, "No Project", "No active project to save.")
-            self.app_window.go_to_new_project_screen() # If no project, just go back
+            return False # No project to save
+
+    def save_project_and_go_back(self):
+        if self.save_current_project(): # Call the new save method
+            self.app_window.go_to_main_menu_screen() # Navigate after successful save
+        # If save_current_project returns False, it means save was cancelled or failed, so stay on current screen
 
 class Category2Screen(QWidget):
     def __init__(self, parent=None):
@@ -173,6 +215,8 @@ class ApplicationWindow(QMainWindow):
         self.setCentralWidget(self.stacked_widget)
 
         self.current_project = None # Initialize current_project to None
+        self.project_modified = False # Track if the current project has unsaved changes
+        self.current_project_file_path = None # Track the file path of the current project
 
         self.setup_screens()
         self.splash_screen.finish(self)

@@ -1,1 +1,1 @@
-pyside6-uic 
+pyside6-rcc assets/app_resources.qrc -o src/resources.py
