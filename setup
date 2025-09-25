@@ -1,1 +1,2 @@
 pyside6-rcc assets/app_resources.qrc -o src/resources.py
+pyside6-uic assets/ui/GenBBS_catg1.ui -o src/gui/ui_GenBBS_catg1.py

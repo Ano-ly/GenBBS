@@ -8,7 +8,7 @@ class Bar:
     """
     This class will hold all the details for a single bar mark.
     """
-    def __init__(self, bar_mark: int, shape_code: str, diameter: str, lengths: dict, number_of_bars: int):
+    def __init__(self, bar_mark: int, shape_code: str, diameter: str, lengths: dict, number_of_bars: int, parent_tree: list[dict] = None):
         self.bar_id = str(uuid.uuid4()) # Unique ID for each bar
         self.bar_mark = bar_mark
         self.shape_code = shape_code
@@ -17,6 +17,7 @@ class Bar:
         self.number_of_bars = number_of_bars
         self.cut_length = self.calculate_cut_length()
         self.unit_weight, self.total_weight = self.calculate_weight()
+        self.parent_tree = parent_tree if parent_tree is not None else []
 
     def _get_bend_radius(self) -> float:
         """
@@ -84,6 +85,7 @@ class Bar:
             "cut_length": self.cut_length,
             "unit_weight": self.unit_weight,
             "total_weight": self.total_weight,
+            "parent_tree": self.parent_tree,
         }
 
     @classmethod
@@ -97,6 +99,7 @@ class Bar:
             diameter=data["diameter"], # Loaded as string
             lengths=data["lengths"],
             number_of_bars=data["number_of_bars"],
+            parent_tree=data.get("parent_tree", [])
         )
         bar.bar_id = data.get("bar_id", str(uuid.uuid4())) # Ensure bar_id is set, generate if missing
         # Recalculate cut_length and weights to ensure consistency, or load directly if trusted
@@ -110,16 +113,20 @@ class Element:
     """
     Represents a structural element containing multiple Bar objects.
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str, parent_tree: list[dict] = None):
         self.element_id = str(uuid.uuid4()) # Unique ID for each element
         self.name = name
         self.bars: list[Bar] = []
+        self.parent_tree = parent_tree if parent_tree is not None else []
 
     def add_bar(self, bar: Bar):
         # Ensure the bar has a unique ID within this element
         existing_bar_ids = {b.bar_id for b in self.bars}
         while bar.bar_id in existing_bar_ids:
             bar.bar_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+        
+        # Set the parent_tree for the bar
+        bar.parent_tree = self.parent_tree + [{'id': self.element_id, 'name': self.name, 'type': 'Element'}]
         self.bars.append(bar)
 
     def remove_bar(self, bar_id: str) -> bool:
@@ -131,14 +138,15 @@ class Element:
         return {
             "element_id": self.element_id,
             "name": self.name,
-            "bars": [bar.to_dict() for bar in self.bars]
+            "bars": [bar.to_dict() for bar in self.bars],
+            "parent_tree": self.parent_tree,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Element':
         if "name" not in data:
             raise ValueError("Element name is required.")
-        element = cls(name=data["name"])
+        element = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
         element.element_id = data.get("element_id", str(uuid.uuid4()))
         element.bars = [Bar.from_dict(bar_data) for bar_data in data.get("bars", [])]
         return element
@@ -148,16 +156,20 @@ class CategoryLower:
     """
     Represents a category containing multiple Element objects.
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str, parent_tree: list[dict] = None):
         self.category_lower_id = str(uuid.uuid4()) # Unique ID for each subcategory
         self.name = name
         self.elements: list[Element] = []
+        self.parent_tree = parent_tree if parent_tree is not None else []
 
     def add_element(self, element: Element):
         # Ensure the element has a unique ID within this subcategory
         existing_element_ids = {e.element_id for e in self.elements}
         while element.element_id in existing_element_ids:
             element.element_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+        
+        # Set the parent_tree for the element
+        element.parent_tree = self.parent_tree + [{'id': self.category_lower_id, 'name': self.name, 'type': 'CategoryLower'}]
         self.elements.append(element)
 
     def remove_element(self, element_id: str) -> bool:
@@ -170,12 +182,13 @@ class CategoryLower:
             "type": "CategoryLower",
             "category_lower_id": self.category_lower_id,
             "name": self.name,
-            "elements": [element.to_dict() for element in self.elements]
+            "elements": [element.to_dict() for element in self.elements],
+            "parent_tree": self.parent_tree,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> 'CategoryLower':
-        category_lower = cls(name=data["name"])
+        category_lower = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
         category_lower.category_lower_id = data.get("category_lower_id", str(uuid.uuid4())) # Ensure category_lower_id is set, generate if missing
         category_lower.elements = [Element.from_dict(element_data) for element_data in data.get("elements", [])]
         return category_lower
@@ -185,10 +198,11 @@ class CategoryHigher:
     """
     Represents a category containing multiple CategoryLower or CategoryHigher objects.
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str, parent_tree: list[dict] = None):
         self.category_higher_id = str(uuid.uuid4()) # Unique ID for each category
         self.name = name
         self.children: list[Union['CategoryLower', 'CategoryHigher']] = []
+        self.parent_tree = parent_tree if parent_tree is not None else []
 
     def add_child(self, child: Union['CategoryLower', 'CategoryHigher']):
         # Ensure the child has a unique ID within this category
@@ -196,9 +210,11 @@ class CategoryHigher:
         if isinstance(child, CategoryLower):
             while child.category_lower_id in existing_child_ids:
                 child.category_lower_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            child.parent_tree = self.parent_tree + [{'id': self.category_higher_id, 'name': self.name, 'type': 'CategoryHigher'}]
         elif isinstance(child, CategoryHigher):
             while child.category_higher_id in existing_child_ids:
                 child.category_higher_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            child.parent_tree = self.parent_tree + [{'id': self.category_higher_id, 'name': self.name, 'type': 'CategoryHigher'}]
         self.children.append(child)
 
     def remove_child(self, child_id: str) -> bool:
@@ -211,12 +227,13 @@ class CategoryHigher:
             "type": "CategoryHigher",
             "category_higher_id": self.category_higher_id,
             "name": self.name,
-            "children": [child.to_dict() for child in self.children]
+            "children": [child.to_dict() for child in self.children],
+            "parent_tree": self.parent_tree,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> 'CategoryHigher':
-        category_higher = cls(name=data["name"])
+        category_higher = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
         category_higher.category_higher_id = data.get("category_higher_id", str(uuid.uuid4())) # Ensure category_higher_id is set, generate if missing
         children_data = data.get("children", [])
         for child_data in children_data:
@@ -242,9 +259,11 @@ class Project:
         if isinstance(category, CategoryLower):
             while category.category_lower_id in existing_category_ids:
                 category.category_lower_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            category.parent_tree = [{'id': self.project_id, 'name': self.name, 'type': 'Project'}]
         elif isinstance(category, CategoryHigher):
             while category.category_higher_id in existing_category_ids:
                 category.category_higher_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            category.parent_tree = [{'id': self.project_id, 'name': self.name, 'type': 'Project'}]
         self.categories.append(category)
 
     def remove_category(self, category_id: str) -> bool:

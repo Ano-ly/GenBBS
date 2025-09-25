@@ -18,14 +18,15 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QHeaderView,
     QLabel, QLayout, QLineEdit, QMainWindow,
     QMenuBar, QPushButton, QSizePolicy, QSpacerItem,
-    QStatusBar, QTreeView, QVBoxLayout, QWidget)
+    QStatusBar, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+    QWidget)
 import app_resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(718, 597)
+        MainWindow.resize(718, 571)
         font = QFont()
         font.setStrikeOut(False)
         MainWindow.setFont(font)
@@ -33,16 +34,16 @@ class Ui_MainWindow(object):
         icon.addFile(u":/images/GenBBS Logo.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setAutoFillBackground(True)
-        self.centralwidgetCatg1 = QWidget(MainWindow)
-        self.centralwidgetCatg1.setObjectName(u"centralwidgetCatg1")
+        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.centralwidgetCatg1.sizePolicy().hasHeightForWidth())
-        self.centralwidgetCatg1.setSizePolicy(sizePolicy)
-        self.verticalLayout = QVBoxLayout(self.centralwidgetCatg1)
+        sizePolicy.setHeightForWidth(self.centralwidget.sizePolicy().hasHeightForWidth())
+        self.centralwidget.setSizePolicy(sizePolicy)
+        self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.frame1Catg1 = QFrame(self.centralwidgetCatg1)
+        self.frame1Catg1 = QFrame(self.centralwidget)
         self.frame1Catg1.setObjectName(u"frame1Catg1")
         sizePolicy.setHeightForWidth(self.frame1Catg1.sizePolicy().hasHeightForWidth())
         self.frame1Catg1.setSizePolicy(sizePolicy)
@@ -53,47 +54,114 @@ class Ui_MainWindow(object):
         self.frame1Catg1.setFrameShape(QFrame.Shape.WinPanel)
         self.frame1Catg1.setFrameShadow(QFrame.Shadow.Sunken)
         self.horizontalLayout = QHBoxLayout(self.frame1Catg1)
+        self.horizontalLayout.setSpacing(6)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.frameLeftCatg1 = QFrame(self.frame1Catg1)
-        self.frameLeftCatg1.setObjectName(u"frameLeftCatg1")
+        self.frameLeftCatg2 = QFrame(self.frame1Catg1)
+        self.frameLeftCatg2.setObjectName(u"frameLeftCatg2")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(3)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.frameLeftCatg1.sizePolicy().hasHeightForWidth())
-        self.frameLeftCatg1.setSizePolicy(sizePolicy1)
-        self.frameLeftCatg1.setAutoFillBackground(False)
-        self.frameLeftCatg1.setStyleSheet(u"QPushButton {\n"
+        sizePolicy1.setHeightForWidth(self.frameLeftCatg2.sizePolicy().hasHeightForWidth())
+        self.frameLeftCatg2.setSizePolicy(sizePolicy1)
+        self.frameLeftCatg2.setAutoFillBackground(False)
+        self.frameLeftCatg2.setStyleSheet(u"#btnCreateSubCatg2 {\n"
 "background-color: rgb(85, 170, 0);\n"
 "border-radius: 5px;\n"
 "color: white;\n"
 "padding-left: 5px;\n"
 "padding-right: 5px;\n"
 "}\n"
-"QPushButton:hover {\n"
+"#btnCreateSubCatg2:hover {\n"
 "background-color:rgb(139, 243, 59)\n"
+"}\n"
+"#btnCreateElementCatg2 {\n"
+"background-color: rgb(85, 170, 0);\n"
+"border-radius: 5px;\n"
+"color: white;\n"
+"padding-left: 5px;\n"
+"padding-right: 5px;\n"
+"}\n"
+"#btnCreateElementCatg2:hover {\n"
+"background-color:rgb(139, 243, 59)\n"
+"}\n"
+"#btnSaveCatg1 {\n"
+"border-radius: 5px;\n"
+"color: black;\n"
+"padding-left: 5px;\n"
+"padding-right: 5px;\n"
+"}\n"
+"#btnSaveCatg1:hover {\n"
+"background-color:rgb(170, 170, 170)\n"
+"}\n"
+"#btnBackCatg1 {\n"
+"\n"
+"border-radius: 5px;\n"
+"color: black;\n"
+"padding-left: 5px;\n"
+"padding-right: 5px;\n"
+"}\n"
+"#btnBackCatg1:hover {\n"
+"background-color:rgb(170, 170, 170)\n"
 "}")
-        self.frameLeftCatg1.setFrameShape(QFrame.Shape.Box)
-        self.frameLeftCatg1.setFrameShadow(QFrame.Shadow.Sunken)
-        self.verticalLayout_3 = QVBoxLayout(self.frameLeftCatg1)
-        self.verticalLayout_3.setSpacing(30)
+        self.frameLeftCatg2.setFrameShape(QFrame.Shape.Box)
+        self.frameLeftCatg2.setFrameShadow(QFrame.Shadow.Sunken)
+        self.verticalLayout_3 = QVBoxLayout(self.frameLeftCatg2)
+        self.verticalLayout_3.setSpacing(20)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.verticalLayout_3.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
-        self.label1Catg1 = QLabel(self.frameLeftCatg1)
-        self.label1Catg1.setObjectName(u"label1Catg1")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.btnBackCatg1 = QPushButton(self.frameLeftCatg2)
+        self.btnBackCatg1.setObjectName(u"btnBackCatg1")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.label1Catg1.sizePolicy().hasHeightForWidth())
-        self.label1Catg1.setSizePolicy(sizePolicy2)
+        sizePolicy2.setHeightForWidth(self.btnBackCatg1.sizePolicy().hasHeightForWidth())
+        self.btnBackCatg1.setSizePolicy(sizePolicy2)
+        self.btnBackCatg1.setMinimumSize(QSize(60, 0))
+        self.btnBackCatg1.setMaximumSize(QSize(60, 16777215))
+        font1 = QFont()
+        font1.setFamilies([u"Segoe UI"])
+        font1.setPointSize(9)
+        self.btnBackCatg1.setFont(font1)
+        icon1 = QIcon()
+        icon1.addFile(u":/images/Back_Button.jpg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnBackCatg1.setIcon(icon1)
+
+        self.horizontalLayout_2.addWidget(self.btnBackCatg1)
+
+        self.btnSaveCatg1 = QPushButton(self.frameLeftCatg2)
+        self.btnSaveCatg1.setObjectName(u"btnSaveCatg1")
+        self.btnSaveCatg1.setAutoFillBackground(False)
+        icon2 = QIcon()
+        icon2.addFile(u":/images/Save button.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnSaveCatg1.setIcon(icon2)
+
+        self.horizontalLayout_2.addWidget(self.btnSaveCatg1)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_2.addItem(self.horizontalSpacer)
+
+
+        self.verticalLayout_3.addLayout(self.horizontalLayout_2)
+
+        self.label1Catg1 = QLabel(self.frameLeftCatg2)
+        self.label1Catg1.setObjectName(u"label1Catg1")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.label1Catg1.sizePolicy().hasHeightForWidth())
+        self.label1Catg1.setSizePolicy(sizePolicy3)
         self.label1Catg1.setMinimumSize(QSize(0, 30))
         self.label1Catg1.setMaximumSize(QSize(16777215, 30))
         self.label1Catg1.setBaseSize(QSize(0, 30))
-        font1 = QFont()
-        font1.setFamilies([u"Segoe UI"])
-        font1.setPointSize(12)
-        font1.setBold(False)
-        font1.setStrikeOut(False)
-        self.label1Catg1.setFont(font1)
+        font2 = QFont()
+        font2.setFamilies([u"Segoe UI"])
+        font2.setPointSize(11)
+        font2.setBold(True)
+        font2.setStrikeOut(False)
+        self.label1Catg1.setFont(font2)
         self.label1Catg1.setAutoFillBackground(False)
         self.label1Catg1.setStyleSheet(u"\n"
 "	\n"
@@ -103,20 +171,32 @@ class Ui_MainWindow(object):
 "    background-attachment: fixed;\n"
 "color: white;\n"
 "")
+        self.label1Catg1.setMargin(5)
 
         self.verticalLayout_3.addWidget(self.label1Catg1)
 
-        self.layout1Catg = QHBoxLayout()
-        self.layout1Catg.setSpacing(5)
-        self.layout1Catg.setObjectName(u"layout1Catg")
-        self.layout1Catg.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
-        self.layout1Catg.setContentsMargins(10, 0, 20, 300)
-        self.newInputCatg1 = QLineEdit(self.frameLeftCatg1)
-        self.newInputCatg1.setObjectName(u"newInputCatg1")
-        sizePolicy2.setHeightForWidth(self.newInputCatg1.sizePolicy().hasHeightForWidth())
-        self.newInputCatg1.setSizePolicy(sizePolicy2)
-        self.newInputCatg1.setMinimumSize(QSize(0, 30))
-        self.newInputCatg1.setMaximumSize(QSize(600, 16777215))
+        self.label2Catg2 = QLabel(self.frameLeftCatg2)
+        self.label2Catg2.setObjectName(u"label2Catg2")
+        font3 = QFont()
+        font3.setFamilies([u"Segoe UI"])
+        font3.setPointSize(12)
+        font3.setBold(True)
+        font3.setStrikeOut(False)
+        self.label2Catg2.setFont(font3)
+
+        self.verticalLayout_3.addWidget(self.label2Catg2)
+
+        self.layout1Catg2 = QHBoxLayout()
+        self.layout1Catg2.setSpacing(5)
+        self.layout1Catg2.setObjectName(u"layout1Catg2")
+        self.layout1Catg2.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
+        self.layout1Catg2.setContentsMargins(10, 0, 20, 10)
+        self.inputNewElementCatg = QLineEdit(self.frameLeftCatg2)
+        self.inputNewElementCatg.setObjectName(u"inputNewElementCatg")
+        sizePolicy3.setHeightForWidth(self.inputNewElementCatg.sizePolicy().hasHeightForWidth())
+        self.inputNewElementCatg.setSizePolicy(sizePolicy3)
+        self.inputNewElementCatg.setMinimumSize(QSize(0, 30))
+        self.inputNewElementCatg.setMaximumSize(QSize(600, 16777215))
         palette = QPalette()
         brush = QBrush(QColor(255, 255, 255, 255))
         brush.setStyle(Qt.BrushStyle.SolidPattern)
@@ -129,26 +209,28 @@ class Ui_MainWindow(object):
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, brush)
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, brush)
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, brush)
-        self.newInputCatg1.setPalette(palette)
-        font2 = QFont()
-        font2.setFamilies([u"Segoe UI"])
-        font2.setPointSize(12)
-        font2.setBold(False)
-        font2.setItalic(False)
-        self.newInputCatg1.setFont(font2)
-        self.newInputCatg1.setStyleSheet(u"border-radius: 3px;\n"
+        self.inputNewElementCatg.setPalette(palette)
+        font4 = QFont()
+        font4.setFamilies([u"Segoe UI"])
+        font4.setPointSize(10)
+        font4.setBold(False)
+        font4.setItalic(False)
+        self.inputNewElementCatg.setFont(font4)
+        self.inputNewElementCatg.setStyleSheet(u"border-radius: 3px;\n"
 "border: 1px solid rgb(170, 0, 0);\n"
 "padding-left: 5px;\n"
 "")
-        self.newInputCatg1.setAlignment(Qt.AlignmentFlag.AlignJustify|Qt.AlignmentFlag.AlignVCenter)
-        self.newInputCatg1.setClearButtonEnabled(True)
+        self.inputNewElementCatg.setAlignment(Qt.AlignmentFlag.AlignJustify|Qt.AlignmentFlag.AlignVCenter)
+        self.inputNewElementCatg.setClearButtonEnabled(True)
 
-        self.layout1Catg.addWidget(self.newInputCatg1)
+        self.layout1Catg2.addWidget(self.inputNewElementCatg)
 
-        self.btnCreateCatg1 = QPushButton(self.frameLeftCatg1)
-        self.btnCreateCatg1.setObjectName(u"btnCreateCatg1")
-        self.btnCreateCatg1.setMinimumSize(QSize(0, 30))
-        self.btnCreateCatg1.setMaximumSize(QSize(70, 16777215))
+        self.btnCreateElementCatg2 = QPushButton(self.frameLeftCatg2)
+        self.btnCreateElementCatg2.setObjectName(u"btnCreateElementCatg2")
+        sizePolicy2.setHeightForWidth(self.btnCreateElementCatg2.sizePolicy().hasHeightForWidth())
+        self.btnCreateElementCatg2.setSizePolicy(sizePolicy2)
+        self.btnCreateElementCatg2.setMinimumSize(QSize(60, 30))
+        self.btnCreateElementCatg2.setMaximumSize(QSize(50, 16777215))
         palette1 = QPalette()
         palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, brush)
         brush1 = QBrush(QColor(85, 170, 0, 255))
@@ -186,47 +268,157 @@ class Ui_MainWindow(object):
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.PlaceholderText, brush3)
 #endif
-        self.btnCreateCatg1.setPalette(palette1)
-        self.btnCreateCatg1.setFont(font2)
-        self.btnCreateCatg1.setAutoFillBackground(False)
-        self.btnCreateCatg1.setStyleSheet(u"")
-        self.btnCreateCatg1.setCheckable(True)
+        self.btnCreateElementCatg2.setPalette(palette1)
+        font5 = QFont()
+        font5.setFamilies([u"Segoe UI"])
+        font5.setPointSize(12)
+        font5.setBold(False)
+        font5.setItalic(False)
+        self.btnCreateElementCatg2.setFont(font5)
+        self.btnCreateElementCatg2.setAutoFillBackground(False)
+        self.btnCreateElementCatg2.setStyleSheet(u"")
+        self.btnCreateElementCatg2.setCheckable(True)
 
-        self.layout1Catg.addWidget(self.btnCreateCatg1)
+        self.layout1Catg2.addWidget(self.btnCreateElementCatg2)
 
-        self.hSpacer1_1 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.hSpacer2_1 = QSpacerItem(40, 20, QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
 
-        self.layout1Catg.addItem(self.hSpacer1_1)
+        self.layout1Catg2.addItem(self.hSpacer2_1)
 
-        self.layout1Catg.setStretch(0, 6)
-        self.layout1Catg.setStretch(1, 2)
-        self.layout1Catg.setStretch(2, 1)
+        self.layout1Catg2.setStretch(0, 6)
+        self.layout1Catg2.setStretch(1, 2)
+        self.layout1Catg2.setStretch(2, 1)
 
-        self.verticalLayout_3.addLayout(self.layout1Catg)
+        self.verticalLayout_3.addLayout(self.layout1Catg2)
 
-        self.vSpacer1_1 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.label_2 = QLabel(self.frameLeftCatg2)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setFont(font3)
 
-        self.verticalLayout_3.addItem(self.vSpacer1_1)
+        self.verticalLayout_3.addWidget(self.label_2)
 
+        self.layout2Catg2 = QHBoxLayout()
+        self.layout2Catg2.setSpacing(5)
+        self.layout2Catg2.setObjectName(u"layout2Catg2")
+        self.layout2Catg2.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
+        self.layout2Catg2.setContentsMargins(10, 0, 20, 10)
+        self.inputNewSubCatg1 = QLineEdit(self.frameLeftCatg2)
+        self.inputNewSubCatg1.setObjectName(u"inputNewSubCatg1")
+        sizePolicy3.setHeightForWidth(self.inputNewSubCatg1.sizePolicy().hasHeightForWidth())
+        self.inputNewSubCatg1.setSizePolicy(sizePolicy3)
+        self.inputNewSubCatg1.setMinimumSize(QSize(0, 30))
+        self.inputNewSubCatg1.setMaximumSize(QSize(600, 16777215))
+        palette2 = QPalette()
+        palette2.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, brush)
+        palette2.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, brush)
+        palette2.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, brush)
+        palette2.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, brush)
+        palette2.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, brush)
+        palette2.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, brush)
+        palette2.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, brush)
+        palette2.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, brush)
+        palette2.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, brush)
+        self.inputNewSubCatg1.setPalette(palette2)
+        self.inputNewSubCatg1.setFont(font4)
+        self.inputNewSubCatg1.setStyleSheet(u"border-radius: 3px;\n"
+"border: 1px solid rgb(170, 0, 0);\n"
+"padding-left: 5px;\n"
+"")
+        self.inputNewSubCatg1.setAlignment(Qt.AlignmentFlag.AlignJustify|Qt.AlignmentFlag.AlignVCenter)
+        self.inputNewSubCatg1.setClearButtonEnabled(True)
 
-        self.horizontalLayout.addWidget(self.frameLeftCatg1)
+        self.layout2Catg2.addWidget(self.inputNewSubCatg1)
+
+        self.btnCreateSubCatg2 = QPushButton(self.frameLeftCatg2)
+        self.btnCreateSubCatg2.setObjectName(u"btnCreateSubCatg2")
+        sizePolicy2.setHeightForWidth(self.btnCreateSubCatg2.sizePolicy().hasHeightForWidth())
+        self.btnCreateSubCatg2.setSizePolicy(sizePolicy2)
+        self.btnCreateSubCatg2.setMinimumSize(QSize(60, 30))
+        self.btnCreateSubCatg2.setMaximumSize(QSize(50, 16777215))
+        palette3 = QPalette()
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, brush)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, brush2)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        palette3.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.PlaceholderText, brush3)
+#endif
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, brush)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, brush2)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        palette3.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.PlaceholderText, brush3)
+#endif
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, brush)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, brush)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, brush1)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, brush2)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        palette3.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.PlaceholderText, brush3)
+#endif
+        self.btnCreateSubCatg2.setPalette(palette3)
+        self.btnCreateSubCatg2.setFont(font5)
+        self.btnCreateSubCatg2.setAutoFillBackground(False)
+        self.btnCreateSubCatg2.setStyleSheet(u"")
+        self.btnCreateSubCatg2.setCheckable(True)
+
+        self.layout2Catg2.addWidget(self.btnCreateSubCatg2)
+
+        self.hSpacer2_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+
+        self.layout2Catg2.addItem(self.hSpacer2_2)
+
+        self.layout2Catg2.setStretch(0, 6)
+        self.layout2Catg2.setStretch(1, 2)
+        self.layout2Catg2.setStretch(2, 1)
+
+        self.verticalLayout_3.addLayout(self.layout2Catg2)
+
+        self.vSpacer2_1 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_3.addItem(self.vSpacer2_1)
+
+        self.vSpacer2_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_3.addItem(self.vSpacer2_2)
+
+        self.verticalLayout_3.setStretch(1, 1)
+        self.verticalLayout_3.setStretch(2, 1)
+        self.verticalLayout_3.setStretch(3, 1)
+        self.verticalLayout_3.setStretch(4, 1)
+        self.verticalLayout_3.setStretch(5, 1)
+        self.verticalLayout_3.setStretch(6, 1)
+        self.verticalLayout_3.setStretch(7, 1)
+
+        self.horizontalLayout.addWidget(self.frameLeftCatg2)
 
         self.frameRightCatg1 = QFrame(self.frame1Catg1)
         self.frameRightCatg1.setObjectName(u"frameRightCatg1")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy3.setHorizontalStretch(2)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.frameRightCatg1.sizePolicy().hasHeightForWidth())
-        self.frameRightCatg1.setSizePolicy(sizePolicy3)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy4.setHorizontalStretch(2)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.frameRightCatg1.sizePolicy().hasHeightForWidth())
+        self.frameRightCatg1.setSizePolicy(sizePolicy4)
         self.frameRightCatg1.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         self.frameRightCatg1.setAutoFillBackground(False)
         self.frameRightCatg1.setStyleSheet(u"QPushButton {\n"
 "	background-color: rgb(170, 0, 0);\n"
 "	border-radius: 3px;\n"
 "	color: white;\n"
+"	margin-right: 5pt;\n"
 "}\n"
 "QPushButton:hover {\n"
-"	background-color: rgb(181, 78, 78)\n"
+"	background-color: rgb(181, 78, 78);\n"
 "}\n"
 "\n"
 "")
@@ -236,11 +428,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.label2Catg1 = QLabel(self.frameRightCatg1)
         self.label2Catg1.setObjectName(u"label2Catg1")
-        font3 = QFont()
-        font3.setFamilies([u"Segoe UI"])
-        font3.setPointSize(12)
-        font3.setBold(True)
-        font3.setStrikeOut(False)
         self.label2Catg1.setFont(font3)
 
         self.verticalLayout_2.addWidget(self.label2Catg1)
@@ -257,34 +444,33 @@ class Ui_MainWindow(object):
         self.frame2Catg1.setAutoFillBackground(False)
         self.frame2Catg1.setFrameShape(QFrame.Shape.StyledPanel)
         self.frame2Catg1.setFrameShadow(QFrame.Shadow.Raised)
-        self.horizontalLayout_2 = QHBoxLayout(self.frame2Catg1)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.treeViewCatg1 = QTreeView(self.frame2Catg1)
-        self.treeViewCatg1.setObjectName(u"treeViewCatg1")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.treeViewCatg1.sizePolicy().hasHeightForWidth())
-        self.treeViewCatg1.setSizePolicy(sizePolicy4)
+        self.horizontalLayout_3 = QHBoxLayout(self.frame2Catg1)
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.treeWidgetCatg1 = QTreeWidget(self.frame2Catg1)
+        __qtreewidgetitem = QTreeWidgetItem()
+        __qtreewidgetitem.setText(1, u"2");
+        __qtreewidgetitem.setText(0, u"1");
+        self.treeWidgetCatg1.setHeaderItem(__qtreewidgetitem)
+        self.treeWidgetCatg1.setObjectName(u"treeWidgetCatg1")
+        self.treeWidgetCatg1.setTabKeyNavigation(True)
+        self.treeWidgetCatg1.setColumnCount(2)
 
-        self.horizontalLayout_2.addWidget(self.treeViewCatg1)
+        self.horizontalLayout_3.addWidget(self.treeWidgetCatg1)
 
 
         self.verticalLayout_2.addWidget(self.frame2Catg1)
 
         self.btnExportCatg1 = QPushButton(self.frameRightCatg1)
         self.btnExportCatg1.setObjectName(u"btnExportCatg1")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy5.setHorizontalStretch(0)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.btnExportCatg1.sizePolicy().hasHeightForWidth())
-        self.btnExportCatg1.setSizePolicy(sizePolicy5)
+        sizePolicy2.setHeightForWidth(self.btnExportCatg1.sizePolicy().hasHeightForWidth())
+        self.btnExportCatg1.setSizePolicy(sizePolicy2)
         self.btnExportCatg1.setMinimumSize(QSize(70, 30))
         self.btnExportCatg1.setMaximumSize(QSize(60, 25))
-        font4 = QFont()
-        font4.setFamilies([u"Segoe UI"])
-        font4.setPointSize(12)
-        self.btnExportCatg1.setFont(font4)
+        font6 = QFont()
+        font6.setFamilies([u"Segoe UI"])
+        font6.setPointSize(12)
+        font6.setStrikeOut(False)
+        self.btnExportCatg1.setFont(font6)
         self.btnExportCatg1.setStyleSheet(u"")
         self.btnExportCatg1.setCheckable(True)
 
@@ -298,7 +484,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.frame1Catg1)
 
-        MainWindow.setCentralWidget(self.centralwidgetCatg1)
+        MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 718, 22))
@@ -314,10 +500,17 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.label1Catg1.setText(QCoreApplication.translate("MainWindow", u" Create New Category", None))
-        self.newInputCatg1.setText("")
-        self.newInputCatg1.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Enter name of new category", None))
-        self.btnCreateCatg1.setText(QCoreApplication.translate("MainWindow", u"Create", None))
+        self.btnBackCatg1.setText(QCoreApplication.translate("MainWindow", u"Back", None))
+        self.btnSaveCatg1.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.label1Catg1.setText(QCoreApplication.translate("MainWindow", u"Category Placeholder, i.e [GROUND FLOOR]", None))
+        self.label2Catg2.setText(QCoreApplication.translate("MainWindow", u"Add Structural Element", None))
+        self.inputNewElementCatg.setText("")
+        self.inputNewElementCatg.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Enter name of structural element", None))
+        self.btnCreateElementCatg2.setText(QCoreApplication.translate("MainWindow", u"Create", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add Sub-Category", None))
+        self.inputNewSubCatg1.setText("")
+        self.inputNewSubCatg1.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Enter name of new category", None))
+        self.btnCreateSubCatg2.setText(QCoreApplication.translate("MainWindow", u"Create", None))
         self.label2Catg1.setText(QCoreApplication.translate("MainWindow", u"Categories", None))
         self.btnExportCatg1.setText(QCoreApplication.translate("MainWindow", u"Export", None))
     # retranslateUi

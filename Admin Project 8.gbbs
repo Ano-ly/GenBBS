@@ -1,0 +1,32 @@
+{
+    "project_id": "a26570db-fc9c-4afc-8b74-e8d03d4b04b7",
+    "name": "Admin Project 8",
+    "categories": [
+        {
+            "type": "CategoryHigher",
+            "category_higher_id": "9b8a0939-1acd-4083-820e-48c4445819f5",
+            "name": "ff",
+            "children": [],
+            "parent_tree": [
+                {
+                    "id": "a26570db-fc9c-4afc-8b74-e8d03d4b04b7",
+                    "name": "Admin Project 8",
+                    "type": "Project"
+                }
+            ]
+        },
+        {
+            "type": "CategoryHigher",
+            "category_higher_id": "9b8a0939-1acd-4083-820e-48c4445819f5",
+            "name": "ff",
+            "children": [],
+            "parent_tree": [
+                {
+                    "id": "a26570db-fc9c-4afc-8b74-e8d03d4b04b7",
+                    "name": "Admin Project 8",
+                    "type": "Project"
+                }
+            ]
+        }
+    ]
+}

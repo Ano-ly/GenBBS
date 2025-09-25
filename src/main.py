@@ -1,9 +1,9 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter # Re-adding QPixmap and QPainter
 import resources
-from src.logic.data_models import Project
+from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element
 import json
 import os
 
@@ -55,6 +55,7 @@ class MainMenuScreen(QWidget):
             self.app_window.current_project = loaded_project
             self.app_window.project_modified = False
             self.app_window.current_project_file_path = file_path
+            self.app_window.update_window_title(loaded_project.name) # Update window title with loaded project name
             self.app_window.go_to_category1_screen() # Navigate to the main project screen
         except json.JSONDecodeError:
             QMessageBox.warning(self, "File Error", "Selected file is not a valid JSON file or is corrupted.")
@@ -93,6 +94,7 @@ class NewProjectScreen(QWidget):
                 self.app_window.current_project = new_project
                 self.app_window.project_modified = True
                 self.app_window.current_project_file_path = None
+                self.app_window.update_window_title(project_name) # Update window title with new project name
                 self.app_window.go_to_category1_screen()
             else:
                 QMessageBox.warning(self, "Input Error", "Project name cannot be empty.")
@@ -105,16 +107,126 @@ class Category1Screen(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
-        self.connect_buttons()
-
-    def connect_buttons(self):
-        back_button = self.loaded_ui.findChild(QPushButton, "btnBackCatg1")
-        if back_button:
-            back_button.clicked.connect(self.prompt_save_project) # Connect to new method
+        self.tree_widget = self.loaded_ui.findChild(QTreeWidget, "treeWidgetCatg1")
         
-        save_button = self.loaded_ui.findChild(QPushButton, "btnSaveCatg1") # Assuming the save button's object name is btnSave
-        if save_button:
-            save_button.clicked.connect(self.save_current_project)
+
+        
+        # #Set up tree widget display
+        # if self.tree_widget:
+        #     self.tree_widget.setHeaderLabels(["Project Details"])
+        #     header = self.tree_widget.header()
+
+  
+    # def resizeEvent(self, event):
+    #     super().resizeEvent(event)
+    #     if self.tree_widget:
+    #         header = self.tree_widget.header()
+    #         total_width = self.tree_widget.viewport().width()
+    #         header.resizeSection(0, int(total_width * 0.66))  # ~2/3
+    #         header.resizeSection(1, int(total_width * 0.34))  # ~1/3
+    def connect_buttons(self):
+        self.back_button = self.loaded_ui.findChild(QPushButton, "btnBackCatg1")
+        self.save_button = self.loaded_ui.findChild(QPushButton, "btnSaveCatg1")
+        self.label1Catg1 = self.loaded_ui.findChild(QLabel, "label1Catg1")
+        self.input_new_sub_catg1 = self.loaded_ui.findChild(QLineEdit, "inputNewSubCatg1")
+        self.input_new_element_catg1 = self.loaded_ui.findChild(QLineEdit, "inputNewElementCatg1")
+        self.btn_create_sub_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateSubCatg1")
+        self.btn_create_element_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateElementCatg1")
+
+        self.back_button.clicked.connect(self.prompt_save_project)
+        self.save_button.clicked.connect(self.save_current_project)
+        self.btn_create_sub_catg1.clicked.connect(self.add_new_category)        
+        self.btn_create_element_catg1.clicked.connect(self.add_new_element)
+        
+    def setup_for_view(self):
+        self.connect_buttons()
+        self.label1Catg1.setText(self.app_window.current_project.name)
+        print("setting up")
+        self.populate_project_tree()
+        self.input_new_element_catg1.setEnabled(True)
+        self.btn_create_element_catg1.setEnabled(True)
+        self.input_new_sub_catg1.setEnabled(True)
+        self.btn_create_sub_catg1.setEnabled(True)
+        
+
+    def update_selected_item(self):
+        selected_items = self.tree_widget.selectedItems()
+        selected_object = selected_items[0].data(0, Qt.UserRole)
+        if selected_object:
+            self.label1Catg1.setText(f"{selected_object.name}")
+
+        if isinstance(selected_object, Project):
+            # Disable element creation when Project is selected
+            print ("Is instance")
+            self.input_new_element_catg1.setEnabled(False)
+            self.btn_create_element_catg1.setEnabled(False)
+            self.input_new_sub_catg1.setEnabled(True)
+            self.btn_create_sub_catg1.setEnabled(True)
+        elif isinstance(selected_object, CategoryLower):
+            # Disable category creation when CategoryLower is selected
+            self.input_new_sub_catg1.setEnabled(False)
+            self.btn_create_sub_catg1.setEnabled(False)
+            self.input_new_element_catg1.setEnabled(True)
+            self.btn_create_element_catg1.setEnabled(True)
+        elif isinstance(selected_object, CategoryHigher):
+            # Disable category creation when CategoryLower is selected
+            self.input_new_sub_catg1.setEnabled(True)
+            self.btn_create_sub_catg1.setEnabled(True)
+            self.input_new_element_catg1.setEnabled(True)
+            self.btn_create_element_catg1.setEnabled(True)
+
+    def add_new_category(self):
+        category_name = self.input_new_sub_catg1.text().strip()
+        if not category_name:
+            return
+
+        selected_item = self.tree_widget.currentItem()
+        parent_object = None
+
+        if selected_item:
+            parent_object = selected_item.data(0, Qt.UserRole)
+        if parent_object is None or isinstance(parent_object, Project):
+            new_category = CategoryHigher(name=category_name)
+            parent_object.add_category(new_category)
+        elif isinstance(parent_object, CategoryHigher):
+            new_category = CategoryHigher(name=category_name)
+            parent_object.add_child(new_category)
+        else: # No item selected, add to project
+            self.app_window.current_project.add_category(new_category)
+        self.populate_project_tree()
+        self.input_new_sub_catg1.clear()
+        self.app_window.project_modified = True
+
+    def add_new_element(self):
+        pass
+    def populate_project_tree(self):
+        #Recursive function to populate tree widget
+        print("Populating project tree...")
+        def _add_items(parent_item, obj_list):
+            for obj in obj_list:
+                tree_item = QTreeWidgetItem(parent_item, [obj.name])
+                tree_item.setData(0, Qt.UserRole, obj)  # Store the actual object
+                if hasattr(obj, 'children') and obj.children:
+                    print("Inside")
+                    _add_items(tree_item, obj.children)
+                if hasattr(obj, 'elements') and obj.elements:
+                    _add_items(tree_item, obj.elements)
+        self.tree_widget.clear()
+
+        project_item = QTreeWidgetItem(self.tree_widget, [self.app_window.current_project.name])
+        project_item.setData(0, Qt.UserRole, self.app_window.current_project)  # Store the actual project object
+        _add_items(project_item, self.app_window.current_project.categories)
+        self.tree_widget.expandAll()
+
+        self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.tree_widget:
+            header = self.tree_widget.header()
+            total_width = self.tree_widget.viewport().width()
+            header.resizeSection(0, int(total_width * 0.66))  # ~2/3
+            header.resizeSection(1, int(total_width * 0.34))  # ~1/3
 
     def prompt_save_project(self):
         if not self.app_window.project_modified:
@@ -176,14 +288,6 @@ class Category1Screen(QWidget):
             self.app_window.go_to_main_menu_screen() # Navigate after successful save
         # If save_current_project returns False, it means save was cancelled or failed, so stay on current screen
 
-class Category2Screen(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.app_window = parent # Store reference to ApplicationWindow
-        loaded_ui = QUiLoader().load("assets/ui/GenBBS_catg2.ui")
-        layout = QVBoxLayout(self)
-        layout.addWidget(loaded_ui)
-        self.setLayout(layout)
 
 class ElementManagementScreen(QWidget):
     def __init__(self, parent=None):
@@ -203,12 +307,16 @@ class ReinforcementScreen(QWidget):
         layout.addWidget(loaded_ui)
         self.setLayout(layout)
 
+    
+
+
 # --- Main Application Window ---
 class ApplicationWindow(QMainWindow):
     def __init__(self, splash_screen: QSplashScreen):
         super().__init__()
         self.splash_screen = splash_screen
-        self.setWindowTitle("GenBBS Application")
+        self.base_title = "GenBBS Application"
+        self.setWindowTitle(self.base_title)
         self.setGeometry(100, 100, 800, 600)
 
         self.stacked_widget = QStackedWidget()
@@ -221,6 +329,12 @@ class ApplicationWindow(QMainWindow):
         self.setup_screens()
         self.splash_screen.finish(self)
 
+    def update_window_title(self, project_name: str = None):
+        if project_name:
+            self.setWindowTitle(f"{self.base_title} - {project_name}")
+        else:
+            self.setWindowTitle(self.base_title)
+
     def setup_screens(self):
         # Create screen instances
         self.loading_screen_widget = LoadingScreenWidget(self)
@@ -229,28 +343,48 @@ class ApplicationWindow(QMainWindow):
         self.category1_screen = Category1Screen(self)
 
         # Add screens to stacked widget
-        self.stacked_widget.addWidget(self.loading_screen_widget) # Index 0
-        self.stacked_widget.addWidget(self.main_menu_screen)      # Index 1
-        self.stacked_widget.addWidget(self.new_project_screen)    # Index 2
-        self.stacked_widget.addWidget(self.category1_screen)      # Index 3
-        # self.stacked_widget.addWidget(self.category2_screen)
-        # self.stacked_widget.addWidget(self.element_management_screen)
-        # self.stacked_widget.addWidget(self.reinforcement_screen)
+        self.stacked_widget.addWidget(self.loading_screen_widget)
+        self.stacked_widget.addWidget(self.main_menu_screen)
+        self.stacked_widget.addWidget(self.new_project_screen)
+        self.stacked_widget.addWidget(self.category1_screen)
 
         # Set initial screen
         self.go_to_main_menu_screen()
 
+    def closeEvent(self, event):
+        if self.project_modified:
+            reply = QMessageBox.question(self, 'Save Changes?',
+                                         "You have unsaved changes. Do you want to save them before exiting?",
+                                         QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+
+            if reply == QMessageBox.Save:
+                # Call save_current_project from Category1Screen
+                if self.category1_screen.save_current_project():
+                    event.accept() # Accept the close event if save is successful
+                else:
+                    event.ignore() # Ignore if save is cancelled or fails
+            elif reply == QMessageBox.Discard:
+                event.accept() # Accept the close event, discarding changes
+            else:
+                event.ignore() # Ignore the close event, user cancelled
+        else:
+            event.accept() # No unsaved changes, accept the close event
+
+    def go_to_loading_screen(self):
+        self.stacked_widget.setCurrentWidget(self.loading_screen_widget)
+
     def go_to_main_menu_screen(self):
+        self.stacked_widget.setCurrentWidget(self.main_menu_screen)
+        self.update_window_title() # Clear project name from title
         self.stacked_widget.setCurrentIndex(1)
 
     def go_to_new_project_screen(self):
         self.stacked_widget.setCurrentIndex(2)
 
     def go_to_category1_screen(self):
-        self.stacked_widget.setCurrentIndex(3)
-
-    # def go_to_category2_screen(self):
-    #     self.stacked_widget.setCurrentWidget(self.category2_screen)
+        self.stacked_widget.setCurrentIndex(3) 
+        print("Landed")
+        self.category1_screen.setup_for_view()
 
     # def go_to_element_management_screen(self):
     #     self.stacked_widget.setCurrentWidget(self.element_management_screen)
@@ -291,3 +425,5 @@ if __name__ == "__main__":
     main_application_window.show()
 
     app.exec()
+
+    
