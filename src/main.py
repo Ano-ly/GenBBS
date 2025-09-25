@@ -130,14 +130,57 @@ class Category1Screen(QWidget):
         self.label1Catg1 = self.loaded_ui.findChild(QLabel, "label1Catg1")
         self.input_new_sub_catg1 = self.loaded_ui.findChild(QLineEdit, "inputNewSubCatg1")
         self.input_new_element_catg1 = self.loaded_ui.findChild(QLineEdit, "inputNewElementCatg1")
+        self.inputElementQtCatg1 = self.loaded_ui.findChild(QLineEdit, "inputElementQtCatg1")
         self.btn_create_sub_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateSubCatg1")
         self.btn_create_element_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateElementCatg1")
+        self.btn_delete_item_catg1 = self.loaded_ui.findChild(QPushButton, "btnDeleteItemCatg1")
 
         self.back_button.clicked.connect(self.prompt_save_project)
         self.save_button.clicked.connect(self.save_current_project)
         self.btn_create_sub_catg1.clicked.connect(self.add_new_category)        
         self.btn_create_element_catg1.clicked.connect(self.add_new_element)
+        self.btn_delete_item_catg1.clicked.connect(self.delete_selected_item)
+
+    def _remove_item_from_model(self, parent_item, item_to_remove):
+        if isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'children'):
+            parent_item.children = [child for child in parent_item.children if child.id != item_to_remove.id]
+            return True
+        elif isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'categories'):
+            parent_item.categories = [child for child in parent_item.categories if child != item_to_remove]
+            return True
         
+        return False
+
+    def delete_selected_item(self):
+        selected_items = self.tree_widget.selectedItems()
+        if not selected_items:
+            return
+
+        selected_tree_item = selected_items[0]
+        selected_object = selected_tree_item.data(0, Qt.UserRole)
+
+        if selected_object == self.app_window.current_project:
+            QMessageBox.warning(self, "Cannot Delete", "Cannot delete the root project.")
+            return
+
+        reply = QMessageBox.question(self, 'Delete Item', 'Are you sure you want to delete this item?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.No:
+            return
+
+        parent_tree_item = selected_tree_item.parent()
+        if parent_tree_item:
+            parent_object = parent_tree_item.data(0, Qt.UserRole)
+            if self._remove_item_from_model(parent_object, selected_object):
+                parent_tree_item.removeChild(selected_tree_item)
+                self.app_window.project_modified = True
+                self.update_selected_item()
+            else:
+                QMessageBox.warning(self, "Deletion Error", "Could not remove item from model.")
+        else:
+            QMessageBox.warning(self, "Deletion Error", "Cannot determine parent of selected item.")
+
     def setup_for_view(self):
         self.connect_buttons()
         self.label1Catg1.setText(self.app_window.current_project.name)
@@ -158,22 +201,40 @@ class Category1Screen(QWidget):
         if isinstance(selected_object, Project):
             # Disable element creation when Project is selected
             print ("Is instance")
-            self.input_new_element_catg1.setEnabled(False)
-            self.btn_create_element_catg1.setEnabled(False)
-            self.input_new_sub_catg1.setEnabled(True)
-            self.btn_create_sub_catg1.setEnabled(True)
+            if self.input_new_element_catg1:
+                self.input_new_element_catg1.setEnabled(False)
+            if self.btn_create_element_catg1:
+                self.btn_create_element_catg1.setEnabled(False)
+            if self.inputElementQtCatg1:
+                self.inputElementQtCatg1.setEnabled(False)
+            if self.input_new_sub_catg1:
+                self.input_new_sub_catg1.setEnabled(True)
+            if self.btn_create_sub_catg1:
+                self.btn_create_sub_catg1.setEnabled(True)
+            if self.btn_delete_item_catg1:
+                self.btn_delete_item_catg1.setEnabled(False)
         elif isinstance(selected_object, CategoryLower):
             # Disable category creation when CategoryLower is selected
-            self.input_new_sub_catg1.setEnabled(False)
-            self.btn_create_sub_catg1.setEnabled(False)
-            self.input_new_element_catg1.setEnabled(True)
-            self.btn_create_element_catg1.setEnabled(True)
+            if self.input_new_sub_catg1:
+                self.input_new_sub_catg1.setEnabled(False)
+            if self.btn_create_sub_catg1:
+                self.btn_create_sub_catg1.setEnabled(False)
+            if self.input_new_element_catg1:
+                self.input_new_element_catg1.setEnabled(True)
+            if self.btn_create_element_catg1:
+                self.btn_create_element_catg1.setEnabled(True)
+            if self.inputElementQtCatg1:
+                self.inputElementQtCatg1.setEnabled(True)
+            if self.btn_delete_item_catg1:
+                self.btn_delete_item_catg1.setEnabled(True)
         elif isinstance(selected_object, CategoryHigher):
             # Enable category creation for CategoryHigher
             if self.input_new_sub_catg1:
                 self.input_new_sub_catg1.setEnabled(True)
             if self.btn_create_sub_catg1:
                 self.btn_create_sub_catg1.setEnabled(True)
+            if self.btn_delete_item_catg1:
+                self.btn_delete_item_catg1.setEnabled(True)
 
             # Enable element creation for CategoryHigher only if it has no children
             if selected_object.children:
@@ -181,11 +242,15 @@ class Category1Screen(QWidget):
                     self.input_new_element_catg1.setEnabled(False)
                 if self.btn_create_element_catg1:
                     self.btn_create_element_catg1.setEnabled(False)
+                if self.inputElementQtCatg1:
+                    self.inputElementQtCatg1.setEnabled(False)
             else:
                 if self.input_new_element_catg1:
                     self.input_new_element_catg1.setEnabled(True)
                 if self.btn_create_element_catg1:
                     self.btn_create_element_catg1.setEnabled(True)
+                if self.inputElementQtCatg1:
+                    self.inputElementQtCatg1.setEnabled(True)
 
     def add_new_category(self):
         category_name = self.input_new_sub_catg1.text().strip()
@@ -245,6 +310,15 @@ class Category1Screen(QWidget):
         if not element_name:
             return
 
+        quantity_text = self.inputElementQtCatg1.text().strip()
+        try:
+            quantity = int(quantity_text)
+            if quantity <= 0:
+                raise ValueError("Quantity must be a positive number.")
+        except ValueError as e:
+            QMessageBox.warning(self, "Input Error", f"Invalid quantity: {e}. Please enter a valid positive number.")
+            return
+
         selected_items = self.tree_widget.selectedItems()
         if not selected_items:
             # No item selected, cannot add element
@@ -261,7 +335,7 @@ class Category1Screen(QWidget):
         object_to_reselect = None
 
         if isinstance(parent_object, CategoryLower):
-            new_element = Element(name=element_name)
+            new_element = Element(name=element_name, quantity=quantity)
             parent_object.add_element(new_element)
             object_to_reselect = parent_object
         elif isinstance(parent_object, CategoryHigher):
@@ -272,7 +346,7 @@ class Category1Screen(QWidget):
             # Convert CategoryHigher to CategoryLower
             new_category_lower = CategoryLower(name=parent_object.name)
             new_category_lower.id = parent_object.id
-            new_element = Element(name=element_name)
+            new_element = Element(name=element_name, quantity=quantity)
             new_category_lower.add_element(new_element)
 
             # Replace the old CategoryHigher with the new CategoryLower in the project structure

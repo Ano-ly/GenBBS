@@ -113,9 +113,10 @@ class Element:
     """
     Represents a structural element containing multiple Bar objects.
     """
-    def __init__(self, name: str, parent_tree: list[dict] = None):
+    def __init__(self, name: str, quantity: int = 1, parent_tree: list[dict] = None):
         self.element_id = str(uuid.uuid4()) # Unique ID for each element
         self.name = name
+        self.quantity = quantity
         self.bars: list[Bar] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
 
@@ -138,6 +139,7 @@ class Element:
         return {
             "element_id": self.element_id,
             "name": self.name,
+            "quantity": self.quantity,
             "bars": [bar.to_dict() for bar in self.bars],
             "parent_tree": self.parent_tree,
         }
@@ -146,7 +148,7 @@ class Element:
     def from_dict(cls, data: dict) -> 'Element':
         if "name" not in data:
             raise ValueError("Element name is required.")
-        element = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
+        element = cls(name=data["name"], quantity=data.get("quantity", 1), parent_tree=data.get("parent_tree", []))
         element.element_id = data.get("element_id", str(uuid.uuid4()))
         element.bars = [Bar.from_dict(bar_data) for bar_data in data.get("bars", [])]
         return element

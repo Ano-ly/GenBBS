@@ -12,6 +12,8 @@
     <file>ui/GenBBS_element.ui</file>
     <file>ui/GenBBS_loading.ui</file>
     <file>ui/GenBBS_newprj.ui</file>
+    <file>images/delete.png</file>
     <file>ui/GenBBS_reinf.ui</file>
   </qresource>
+  <qresource/>
 </RCC>
