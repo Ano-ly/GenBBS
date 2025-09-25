@@ -1262,7 +1262,9 @@ padding-left: 5px;
 QPushButton:hover {
 	background-color: rgb(181, 78, 78);
 }
-
+#treeWidgetCatg1 {
+	font: 9pt &quot;Segoe UI&quot;;
+}
 </string>
          </property>
          <property name="frameShape">
@@ -1309,6 +1311,9 @@ QPushButton:hover {
              <item>
               <widget class="QTreeWidget" name="treeWidgetCatg1">
                <property name="tabKeyNavigation">
+                <bool>true</bool>
+               </property>
+               <property name="alternatingRowColors">
                 <bool>true</bool>
                </property>
                <property name="columnCount">

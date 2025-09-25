@@ -185,19 +185,33 @@ class Category1Screen(QWidget):
 
         if selected_item:
             parent_object = selected_item.data(0, Qt.UserRole)
-        if parent_object is None or isinstance(parent_object, Project):
-            new_category = CategoryHigher(name=category_name)
-            parent_object.add_category(new_category)
-        elif isinstance(parent_object, CategoryHigher):
-            new_category = CategoryHigher(name=category_name)
-            parent_object.add_child(new_category)
-        else: # No item selected, add to project
+
+        new_category = CategoryHigher(name=category_name)
+        object_to_reselect = None # Initialize object to reselect
+
+        if parent_object is None: # No item selected, add to the current project
             self.app_window.current_project.add_category(new_category)
+            object_to_reselect = self.app_window.current_project
+        elif isinstance(parent_object, Project): # Project is selected
+            parent_object.add_category(new_category)
+            object_to_reselect = parent_object
+        elif isinstance(parent_object, CategoryHigher): # CategoryHigher is selected
+            parent_object.add_child(new_category)
+            object_to_reselect = parent_object
+        # If parent_object is CategoryLower, the UI should have disabled the button, so no action needed here.
+
         self.populate_project_tree()
         self.input_new_sub_catg1.clear()
         self.app_window.project_modified = True
 
-    def add_new_element(self):
+        # Re-select the parent object in the tree to maintain context
+        if object_to_reselect:
+            item_to_select = self.find_tree_item_for_object(object_to_reselect)
+            if item_to_select:
+                self.tree_widget.setCurrentItem(item_to_select)
+                self.tree_widget.expandItem(item_to_select) # Expand to show the newly added category
+
+    def add_new_element():
         pass
     def populate_project_tree(self):
         #Recursive function to populate tree widget
@@ -219,6 +233,23 @@ class Category1Screen(QWidget):
         self.tree_widget.expandAll()
 
         self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
+
+    def find_tree_item_for_object(self, obj, start_item=None):
+        """Recursively finds the QTreeWidgetItem associated with a given data object."""
+        if start_item is None:
+            start_item = self.tree_widget.invisibleRootItem()
+
+        for i in range(start_item.childCount()):
+            child_item = start_item.child(i)
+            item_object = child_item.data(0, Qt.UserRole)
+            if item_object is obj: # Direct object comparison
+                return child_item
+            
+            # Recursively search in children
+            found_item = self.find_tree_item_for_object(obj, child_item)
+            if found_item:
+                return found_item
+        return None
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
