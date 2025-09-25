@@ -6,7 +6,7 @@ class TestCategoryLower:
         category = CategoryLower(name="Test Category Lower")
         assert category.name == "Test Category Lower"
         assert category.elements == []
-        assert isinstance(category.category_lower_id, str)
+        assert isinstance(category.id, str)
 
     def test_add_element(self):
         category = CategoryLower(name="Test Category Lower")
@@ -40,7 +40,7 @@ class TestCategoryLower:
         category.add_element(element)
         expected_dict = {
             "type": "CategoryLower",
-            "category_lower_id": category.category_lower_id,
+            "id": category.id,
             "name": "Test Category Lower",
             "elements": [element.to_dict()]
         }
@@ -65,12 +65,12 @@ class TestCategoryLower:
         }
         category_dict = {
             "type": "CategoryLower",
-            "category_lower_id": "CL1",
+            "id": "CL1",
             "name": "Test Category Lower",
             "elements": [element_dict]
         }
         category = CategoryLower.from_dict(category_dict)
-        assert category.category_lower_id == "CL1"
+        assert category.id == "CL1"
         assert category.name == "Test Category Lower"
         assert len(category.elements) == 1
         assert category.elements[0].element_id == "E1"
@@ -78,7 +78,7 @@ class TestCategoryLower:
 
     def test_from_dict_missing_name(self):
         category_dict = {
-            "category_lower_id": "CL1",
+            "id": "CL1",
             "elements": []
         }
         with pytest.raises(KeyError, match="'name'"):

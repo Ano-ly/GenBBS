@@ -169,11 +169,23 @@ class Category1Screen(QWidget):
             self.input_new_element_catg1.setEnabled(True)
             self.btn_create_element_catg1.setEnabled(True)
         elif isinstance(selected_object, CategoryHigher):
-            # Disable category creation when CategoryLower is selected
-            self.input_new_sub_catg1.setEnabled(True)
-            self.btn_create_sub_catg1.setEnabled(True)
-            self.input_new_element_catg1.setEnabled(True)
-            self.btn_create_element_catg1.setEnabled(True)
+            # Enable category creation for CategoryHigher
+            if self.input_new_sub_catg1:
+                self.input_new_sub_catg1.setEnabled(True)
+            if self.btn_create_sub_catg1:
+                self.btn_create_sub_catg1.setEnabled(True)
+
+            # Enable element creation for CategoryHigher only if it has no children
+            if selected_object.children:
+                if self.input_new_element_catg1:
+                    self.input_new_element_catg1.setEnabled(False)
+                if self.btn_create_element_catg1:
+                    self.btn_create_element_catg1.setEnabled(False)
+            else:
+                if self.input_new_element_catg1:
+                    self.input_new_element_catg1.setEnabled(True)
+                if self.btn_create_element_catg1:
+                    self.btn_create_element_catg1.setEnabled(True)
 
     def add_new_category(self):
         category_name = self.input_new_sub_catg1.text().strip()
@@ -206,13 +218,76 @@ class Category1Screen(QWidget):
 
         # Re-select the parent object in the tree to maintain context
         if object_to_reselect:
-            item_to_select = self.find_tree_item_for_object(object_to_reselect)
-            if item_to_select:
-                self.tree_widget.setCurrentItem(item_to_select)
-                self.tree_widget.expandItem(item_to_select) # Expand to show the newly added category
+            item = self.find_tree_item_for_object(object_to_reselect, self.tree_widget.invisibleRootItem())
+            if item:
+                self.tree_widget.setCurrentItem(item)
+                self.tree_widget.expandItem(item)
 
-    def add_new_element():
-        pass
+    def _replace_category_in_model(self, project_or_category, old_category_id, new_category):
+        if isinstance(project_or_category, Project):
+            for i, category in enumerate(project_or_category.categories):
+                if category.id == old_category_id:
+                    project_or_category.categories[i] = new_category
+                    return True
+                if self._replace_category_in_model(category, old_category_id, new_category):
+                    return True
+        elif isinstance(project_or_category, CategoryHigher):
+            for i, category in enumerate(project_or_category.children):
+                if category.id == old_category_id:
+                    project_or_category.children[i] = new_category
+                    return True
+                if self._replace_category_in_model(category, old_category_id, new_category):
+                    return True
+        return False
+
+    def add_new_element(self):
+        element_name = self.input_new_element_catg1.text().strip()
+        if not element_name:
+            return
+
+        selected_items = self.tree_widget.selectedItems()
+        if not selected_items:
+            # No item selected, cannot add element
+            return
+
+        selected_object = selected_items[0].data(0, Qt.UserRole)
+        parent_object = selected_object # In this context, the selected object is the parent for the new element
+
+        if parent_object is None or isinstance(parent_object, Project):
+            # Cannot add element directly to Project or if no object is selected
+            print("Please select a Category (Higher or Lower) to add an element.")
+            return
+
+        object_to_reselect = None
+
+        if isinstance(parent_object, CategoryLower):
+            new_element = Element(name=element_name)
+            parent_object.add_element(new_element)
+            object_to_reselect = parent_object
+        elif isinstance(parent_object, CategoryHigher):
+            if parent_object.children:
+                print("Cannot add elements to a CategoryHigher that already contains sub-categories.")
+                return
+            
+            # Convert CategoryHigher to CategoryLower
+            new_category_lower = CategoryLower(name=parent_object.name)
+            new_category_lower.id = parent_object.id
+            new_element = Element(name=element_name)
+            new_category_lower.add_element(new_element)
+
+            # Replace the old CategoryHigher with the new CategoryLower in the project structure
+            self._replace_category_in_model(self.app_window.current_project, parent_object.id, new_category_lower)
+            object_to_reselect = new_category_lower
+
+        self.populate_project_tree()
+        self.input_new_element_catg1.clear()
+        self.app_window.project_modified = True
+
+        if object_to_reselect:
+            item = self.find_tree_item_for_object(object_to_reselect, self.tree_widget.invisibleRootItem())
+            if item:
+                self.tree_widget.setCurrentItem(item)
+                self.tree_widget.expandItem(item)
     def populate_project_tree(self):
         #Recursive function to populate tree widget
         print("Populating project tree...")
@@ -301,7 +376,7 @@ class Category1Screen(QWidget):
                     project_data = self.app_window.current_project.to_dict()
                     with open(file_name, 'w') as f:
                         json.dump(project_data, f, indent=4)
-                    QMessageBox.information(self, "Save Successful", f"Project saved to {os.path.basename(file_name)}")
+                    QMessageBox.information(self, "GenBBS", "Save Successful")
                     self.app_window.project_modified = False
                     self.app_window.current_project_file_path = file_name
                     return True # Indicate successful save

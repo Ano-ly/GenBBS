@@ -6,7 +6,7 @@ class TestProject:
         project = Project(name="Test Project")
         assert project.name == "Test Project"
         assert project.categories == []
-        assert isinstance(project.project_id, str)
+        assert isinstance(project.id, str)
 
     def test_add_category(self):
         project = Project(name="Test Project")
@@ -21,7 +21,7 @@ class TestProject:
         category2 = CategoryHigher(name="Category 2")
         project.add_category(category1)
         project.add_category(category2)
-        project.remove_category(category1.category_higher_id)
+        project.remove_category(category1.id)
         assert len(project.categories) == 1
         assert project.categories[0] == category2
 
@@ -44,7 +44,7 @@ class TestProject:
         project.add_category(category_higher)
 
         expected_dict = {
-            "project_id": project.project_id,
+            "id": project.id,
             "name": "Test Project",
             "categories": [
                 category_higher.to_dict()
@@ -71,35 +71,35 @@ class TestProject:
         }
         category_lower_dict = {
             "type": "CategoryLower",
-            "category_lower_id": "CL1",
+            "id": "CL1",
             "name": "Test Category Lower",
             "elements": [element_dict]
         }
         category_higher_dict = {
             "type": "CategoryHigher",
-            "category_higher_id": "CH1",
+            "id": "CH1",
             "name": "Test Category Higher",
             "children": [category_lower_dict]
         }
         project_dict = {
             "type": "Project",
-            "project_id": "P1",
+            "id": "P1",
             "name": "Test Project",
             "categories": [category_higher_dict]
         }
 
         project = Project.from_dict(project_dict)
-        assert project.project_id == "P1"
+        assert project.id == "P1"
         assert project.name == "Test Project"
         assert len(project.categories) == 1
         assert isinstance(project.categories[0], CategoryHigher)
-        assert project.categories[0].category_higher_id == "CH1"
+        assert project.categories[0].id == "CH1"
         assert isinstance(project.categories[0].children[0], CategoryLower)
-        assert project.categories[0].children[0].category_lower_id == "CL1"
+        assert project.categories[0].children[0].id == "CL1"
 
     def test_from_dict_missing_name(self):
         project_dict = {
-            "project_id": "P1",
+            "id": "P1",
             "categories": []
         }
         with pytest.raises(KeyError, match="'name'"):

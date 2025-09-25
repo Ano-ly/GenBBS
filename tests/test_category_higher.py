@@ -6,7 +6,7 @@ class TestCategoryHigher:
         category = CategoryHigher(name="Test Category Higher")
         assert category.name == "Test Category Higher"
         assert category.children == []
-        assert isinstance(category.category_higher_id, str)
+        assert isinstance(category.id, str)
 
     def test_add_child_category_lower(self):
         parent_category = CategoryHigher(name="Parent Category")
@@ -28,7 +28,7 @@ class TestCategoryHigher:
         child2 = CategoryHigher(name="Child 2")
         parent_category.add_child(child1)
         parent_category.add_child(child2)
-        parent_category.remove_child(child1.category_lower_id)
+        parent_category.remove_child(child1.id)
         assert len(parent_category.children) == 1
         assert parent_category.children[0] == child2
 
@@ -53,7 +53,7 @@ class TestCategoryHigher:
 
         expected_dict = {
             "type": "CategoryHigher",
-            "category_higher_id": parent_category.category_higher_id,
+            "id": parent_category.id,
             "name": "Parent Category",
             "children": [
                 child_lower.to_dict(),
@@ -81,35 +81,35 @@ class TestCategoryHigher:
         }
         child_lower_dict = {
             "type": "CategoryLower",
-            "category_lower_id": "CL1",
+            "id": "CL1",
             "name": "Child Lower",
             "elements": [element_dict]
         }
         child_higher_dict = {
             "type": "CategoryHigher",
-            "category_higher_id": "CH1",
+            "id": "CH1",
             "name": "Child Higher",
             "children": []
         }
         parent_category_dict = {
             "type": "CategoryHigher",
-            "category_higher_id": "PCH1",
+            "id": "PCH1",
             "name": "Parent Category",
             "children": [child_lower_dict, child_higher_dict]
         }
 
         category = CategoryHigher.from_dict(parent_category_dict)
-        assert category.category_higher_id == "PCH1"
+        assert category.id == "PCH1"
         assert category.name == "Parent Category"
         assert len(category.children) == 2
         assert isinstance(category.children[0], CategoryLower)
-        assert category.children[0].category_lower_id == "CL1"
+        assert category.children[0].id == "CL1"
         assert isinstance(category.children[1], CategoryHigher)
-        assert category.children[1].category_higher_id == "CH1"
+        assert category.children[1].id == "CH1"
 
     def test_from_dict_missing_name(self):
         category_dict = {
-            "category_higher_id": "CH1",
+            "id": "CH1",
             "children": []
         }
         with pytest.raises(KeyError, match="'name'"):

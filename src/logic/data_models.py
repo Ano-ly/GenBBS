@@ -157,7 +157,7 @@ class CategoryLower:
     Represents a category containing multiple Element objects.
     """
     def __init__(self, name: str, parent_tree: list[dict] = None):
-        self.category_lower_id = str(uuid.uuid4()) # Unique ID for each subcategory
+        self.id = str(uuid.uuid4()) # Unique ID for each subcategory
         self.name = name
         self.elements: list[Element] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
@@ -169,7 +169,7 @@ class CategoryLower:
             element.element_id = str(uuid.uuid4()) # Generate a new ID until it's unique
         
         # Set the parent_tree for the element
-        element.parent_tree = self.parent_tree + [{'id': self.category_lower_id, 'name': self.name, 'type': 'CategoryLower'}]
+        element.parent_tree = self.parent_tree + [{'id': self.id, 'name': self.name, 'type': 'CategoryLower'}]
         self.elements.append(element)
 
     def remove_element(self, element_id: str) -> bool:
@@ -180,7 +180,7 @@ class CategoryLower:
     def to_dict(self) -> dict:
         return {
             "type": "CategoryLower",
-            "category_lower_id": self.category_lower_id,
+            "id": self.id,
             "name": self.name,
             "elements": [element.to_dict() for element in self.elements],
             "parent_tree": self.parent_tree,
@@ -189,7 +189,7 @@ class CategoryLower:
     @classmethod
     def from_dict(cls, data: dict) -> 'CategoryLower':
         category_lower = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
-        category_lower.category_lower_id = data.get("category_lower_id", str(uuid.uuid4())) # Ensure category_lower_id is set, generate if missing
+        category_lower.id = data.get("id", str(uuid.uuid4())) # Ensure id is set, generate if missing
         category_lower.elements = [Element.from_dict(element_data) for element_data in data.get("elements", [])]
         return category_lower
 
@@ -199,33 +199,33 @@ class CategoryHigher:
     Represents a category containing multiple CategoryLower or CategoryHigher objects.
     """
     def __init__(self, name: str, parent_tree: list[dict] = None):
-        self.category_higher_id = str(uuid.uuid4()) # Unique ID for each category
+        self.id = str(uuid.uuid4()) # Unique ID for each category
         self.name = name
         self.children: list[Union['CategoryLower', 'CategoryHigher']] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
 
     def add_child(self, child: Union['CategoryLower', 'CategoryHigher']):
         # Ensure the child has a unique ID within this category
-        existing_child_ids = {c.category_lower_id if isinstance(c, CategoryLower) else c.category_higher_id for c in self.children}
+        existing_child_ids = {c.id if isinstance(c, CategoryLower) else c.id for c in self.children}
         if isinstance(child, CategoryLower):
-            while child.category_lower_id in existing_child_ids:
-                child.category_lower_id = str(uuid.uuid4()) # Generate a new ID until it's unique
-            child.parent_tree = self.parent_tree + [{'id': self.category_higher_id, 'name': self.name, 'type': 'CategoryHigher'}]
+            while child.id in existing_child_ids:
+                child.id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            child.parent_tree = self.parent_tree + [{'id': self.id, 'name': self.name, 'type': 'CategoryHigher'}]
         elif isinstance(child, CategoryHigher):
-            while child.category_higher_id in existing_child_ids:
-                child.category_higher_id = str(uuid.uuid4()) # Generate a new ID until it's unique
-            child.parent_tree = self.parent_tree + [{'id': self.category_higher_id, 'name': self.name, 'type': 'CategoryHigher'}]
+            while child.id in existing_child_ids:
+                child.id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            child.parent_tree = self.parent_tree + [{'id': self.id, 'name': self.name, 'type': 'CategoryHigher'}]
         self.children.append(child)
 
     def remove_child(self, child_id: str) -> bool:
         initial_len = len(self.children)
-        self.children = [c for c in self.children if (isinstance(c, CategoryLower) and c.category_lower_id != child_id) or (isinstance(c, CategoryHigher) and c.category_higher_id != child_id)]
+        self.children = [c for c in self.children if (isinstance(c, CategoryLower) and c.id != child_id) or (isinstance(c, CategoryHigher) and c.id != child_id)]
         return len(self.children) < initial_len
 
     def to_dict(self) -> dict:
         return {
             "type": "CategoryHigher",
-            "category_higher_id": self.category_higher_id,
+            "id": self.id,
             "name": self.name,
             "children": [child.to_dict() for child in self.children],
             "parent_tree": self.parent_tree,
@@ -234,7 +234,7 @@ class CategoryHigher:
     @classmethod
     def from_dict(cls, data: dict) -> 'CategoryHigher':
         category_higher = cls(name=data["name"], parent_tree=data.get("parent_tree", []))
-        category_higher.category_higher_id = data.get("category_higher_id", str(uuid.uuid4())) # Ensure category_higher_id is set, generate if missing
+        category_higher.id = data.get("id", str(uuid.uuid4())) # Ensure id is set, generate if missing
         children_data = data.get("children", [])
         for child_data in children_data:
             if child_data["type"] == "CategoryLower":
@@ -249,31 +249,31 @@ class Project:
     Represents a project containing multiple CategoryHigher or CategoryLower objects.
     """
     def __init__(self, name: str):
-        self.project_id = str(uuid.uuid4()) # Unique ID for each project
+        self.id = str(uuid.uuid4()) # Unique ID for each project
         self.name = name
         self.categories: list[Union['CategoryLower', 'CategoryHigher']] = []
 
     def add_category(self, category: Union['CategoryLower', 'CategoryHigher']):
         # Ensure the category has a unique ID within this project
-        existing_category_ids = {c.category_lower_id if isinstance(c, CategoryLower) else c.category_higher_id for c in self.categories}
+        existing_category_ids = {c.id if isinstance(c, CategoryLower) else c.id for c in self.categories}
         if isinstance(category, CategoryLower):
-            while category.category_lower_id in existing_category_ids:
-                category.category_lower_id = str(uuid.uuid4()) # Generate a new ID until it's unique
-            category.parent_tree = [{'id': self.project_id, 'name': self.name, 'type': 'Project'}]
+            while category.id in existing_category_ids:
+                category.id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            category.parent_tree = [{'id': self.id, 'name': self.name, 'type': 'Project'}]
         elif isinstance(category, CategoryHigher):
-            while category.category_higher_id in existing_category_ids:
-                category.category_higher_id = str(uuid.uuid4()) # Generate a new ID until it's unique
-            category.parent_tree = [{'id': self.project_id, 'name': self.name, 'type': 'Project'}]
+            while category.id in existing_category_ids:
+                category.id = str(uuid.uuid4()) # Generate a new ID until it's unique
+            category.parent_tree = [{'id': self.id, 'name': self.name, 'type': 'Project'}]
         self.categories.append(category)
 
     def remove_category(self, category_id: str) -> bool:
         initial_len = len(self.categories)
-        self.categories = [c for c in self.categories if (isinstance(c, CategoryLower) and c.category_lower_id != category_id) or (isinstance(c, CategoryHigher) and c.category_higher_id != category_id)]
+        self.categories = [c for c in self.categories if (isinstance(c, CategoryLower) and c.id != category_id) or (isinstance(c, CategoryHigher) and c.id != category_id)]
         return len(self.categories) < initial_len
 
     def to_dict(self) -> dict:
         return {
-            "project_id": self.project_id,
+            "id": self.id,
             "name": self.name,
             "categories": [category.to_dict() for category in self.categories]
         }
@@ -281,7 +281,7 @@ class Project:
     @classmethod
     def from_dict(cls, data: dict) -> 'Project':
         project = cls(name=data["name"])
-        project.project_id = data.get("project_id", str(uuid.uuid4())) # Ensure project_id is set, generate if missing
+        project.id = data.get("id", str(uuid.uuid4())) # Ensure id is set, generate if missing
         categories_data = data.get("categories", [])
         for category_data in categories_data:
             if category_data["type"] == "CategoryLower":
