@@ -1,9 +1,9 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter # Re-adding QPixmap and QPainter
 import resources
-from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element
+from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
 
@@ -523,18 +523,145 @@ class ReinforcementScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
-        loaded_ui = QUiLoader().load("assets/ui/GenBBS_reinf.ui")
+        self.loaded_ui = QUiLoader().load("assets/ui/GenBBS_reinf.ui")
         layout = QVBoxLayout(self)
-        layout.addWidget(loaded_ui)
+        layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
         self.element = None
 
         # Connect the back button
-        self.btn_back_reinf = loaded_ui.findChild(QPushButton, "btnBackReinf")
-        self.btn_back_reinf.clicked.connect(self.go_back_to_category1_screen)
-
+       
         # Initialize QLabel for element hierarchy
-        self.lbl_element_hierarchy = loaded_ui.findChild(QLabel, "labelHeaderReinf")
+        self.lbl_element_hierarchy = self.loaded_ui.findChild(QLabel, "labelHeaderReinf")
+        self.connect_ui_elements()
+
+    def connect_ui_elements(self):
+        # Line Edits
+        self.btn_back_reinf = self.loaded_ui.findChild(QPushButton, "btnBackReinf")
+        self.btn_back_reinf.clicked.connect(self.go_back_to_category1_screen)
+        self.btn_save_reinf = self.loaded_ui.findChild(QPushButton, "btnSaveReinf")
+        self.btn_save_reinf.clicked.connect(self.save_current_project)
+        self.input_bar_size_reinf = self.loaded_ui.findChild(QComboBox, "inputBarSizeReinf")
+        self.shape_code_reinf = self.loaded_ui.findChild(QComboBox, "inputShapeCodeReinf")
+        self.input_bar_mark = self.loaded_ui.findChild(QLineEdit, "inputBarMark")
+        self.input_no_of_bars = self.loaded_ui.findChild(QLineEdit, "inputNoOfBars")
+        self.a_dimension = self.loaded_ui.findChild(QLineEdit, "aDimension")
+        self.e_dimension = self.loaded_ui.findChild(QLineEdit, "eDimension")
+        self.b_dimension = self.loaded_ui.findChild(QLineEdit, "bDimension")
+        self.c_dimension = self.loaded_ui.findChild(QLineEdit, "cDimension")
+        self.f_dimension = self.loaded_ui.findChild(QLineEdit, "fDimension")
+        self.r_dimension = self.loaded_ui.findChild(QLineEdit, "rDimension")
+        self.d_dimension = self.loaded_ui.findChild(QLineEdit, "dDimension")
+
+        # Buttons
+        self.btn_serial_no_reinf = self.loaded_ui.findChild(QPushButton, "serialNoReinf")
+        self.btn_next_reinf = self.loaded_ui.findChild(QPushButton, "btnNextReinf")
+        self.btn_next_reinf.clicked.connect(self.create_bar_from_inputs)
+        self.btn_back_reinf = self.loaded_ui.findChild(QPushButton, "btnBackReinf")
+
+        # Labels
+        self.label_header_reinf = self.loaded_ui.findChild(QLabel, "labelHeaderReinf")
+        self.label_serial_no_reinf = self.loaded_ui.findChild(QLabel, "serialNoReinf")
+        self.label_formula_reinf = self.loaded_ui.findChild(QLabel, "formulaReinf")
+        self.label_shape_display_reinf = self.loaded_ui.findChild(QLabel, "shapeDisplayReinf")
+
+        # Table Widget
+        self.table_widget_reinf = self.loaded_ui.findChild(QTableWidget, "tableWidgetReinf")
+
+    def create_bar_from_inputs(self):
+        print("Create Bar button clicked!")
+        # Retrieve values from UI elements
+        bar_size = self.input_bar_size_reinf.currentText()
+        shape_code = self.shape_code_reinf.currentText()
+        bar_mark_text = self.input_bar_mark.text()
+        no_of_bars_text = self.input_no_of_bars.text()
+
+        dimensions = {
+            "A": self.a_dimension.text(),
+            "E": self.e_dimension.text(),
+            "B": self.b_dimension.text(),
+            "C": self.c_dimension.text(),
+            "F": self.f_dimension.text(),
+            "R": self.r_dimension.text(),
+            "D": self.d_dimension.text(),
+        }
+
+        # Basic validation and conversion
+        try:
+            bar_mark = int(bar_mark_text)
+            number_of_bars = int(no_of_bars_text)
+            # Convert dimensions to float, only if they are not empty
+            lengths = {}
+            for key, value in dimensions.items():
+                if value:
+                    lengths[key] = float(value)
+
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
+            return
+
+        if not bar_size or not shape_code:
+            QMessageBox.warning(self, "Input Error", "Please select Bar Size and Shape Code.")
+            return
+
+        # Create Bar object
+        new_bar = Bar(
+            bar_mark=bar_mark,
+            shape_code=shape_code,
+            diameter=bar_size, # Assuming bar_size is the diameter string (e.g., 'Y10')
+            lengths=lengths,
+            number_of_bars=number_of_bars,
+            parent_tree=self.element.parent_tree + [{'id': self.element.element_id, 'name': self.element.name, 'type': 'Element'}]
+        )
+
+        # Add bar to the current element
+        if self.element:
+            self.element.add_bar(new_bar)
+            self.app_window.project_modified = True
+            QMessageBox.information(self, "Success", "Bar added successfully!")
+            self.populate_bars_table()
+            
+            # Clear input fields after successful bar creation
+            self.input_bar_mark.clear()
+            self.input_bar_size_reinf.setCurrentIndex(0) # Reset combo box to first item
+            self.shape_code_reinf.setCurrentIndex(0) # Reset combo box to first item
+            self.input_no_of_bars.clear()
+            self.a_dimension.clear()
+            self.e_dimension.clear()
+            self.b_dimension.clear()
+            self.c_dimension.clear()
+            self.f_dimension.clear()
+            self.r_dimension.clear()
+            self.d_dimension.clear()
+
+        else:
+            QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
+
+        # Placeholder for UI update logic
+        pass
+
+    def populate_bars_table(self):
+        self.table_widget_reinf.setRowCount(0) # Clear existing rows
+        if not self.element or not self.element.bars:
+            return
+
+        # Set table headers
+        headers = ["Bar Mark", "Shape Code", "Diameter", "Lengths", "Number of Bars", "Cut Length", "Unit Weight", "Total Weight"]
+        self.table_widget_reinf.setColumnCount(len(headers))
+        self.table_widget_reinf.setHorizontalHeaderLabels(headers)
+
+        for row, bar in enumerate(self.element.bars):
+            self.table_widget_reinf.insertRow(row)
+            self.table_widget_reinf.setItem(row, 0, QTableWidgetItem(str(bar.bar_mark)))
+            self.table_widget_reinf.setItem(row, 1, QTableWidgetItem(bar.shape_code))
+            self.table_widget_reinf.setItem(row, 2, QTableWidgetItem(bar.diameter))
+            self.table_widget_reinf.setItem(row, 3, QTableWidgetItem(str(bar.lengths)))
+            self.table_widget_reinf.setItem(row, 4, QTableWidgetItem(str(bar.number_of_bars)))
+            self.table_widget_reinf.setItem(row, 5, QTableWidgetItem(f"{bar.cut_length:.2f} m"))
+            self.table_widget_reinf.setItem(row, 6, QTableWidgetItem(f"{bar.unit_weight:.2f} kg/m"))
+            self.table_widget_reinf.setItem(row, 7, QTableWidgetItem(f"{bar.total_weight:.2f} kg"))
+
+        self.table_widget_reinf.resizeColumnsToContents()
 
     def set_element(self, element):
         self.element = element
@@ -542,11 +669,48 @@ class ReinforcementScreen(QWidget):
         hierarchy_names = [item['name'] for item in element.parent_tree] + [element.name]
         self.lbl_element_hierarchy.setText(" > ".join(hierarchy_names))
         print(f"ReinforcementScreen received element: {self.element.name}")
+        self.populate_bars_table() # Populate table when element is set
 
     def go_back_to_category1_screen(self):
         # This method will be connected to a 'Back' button in the UI
         self.app_window.go_to_category1_screen()
         self.element = None
+
+    def save_current_project(self):
+        if not self.app_window.project_modified:
+            QMessageBox.information(self, "No Changes", "No changes have been made since the last save.")
+            return True # Indicate that no saving was needed, but operation was successful
+
+        if self.app_window.current_project:
+            file_name = self.app_window.current_project_file_path
+
+            if not file_name:
+                options = QFileDialog.Options()
+                default_filename = self.app_window.current_project.name + ".gbbs"
+                file_name, _ = QFileDialog.getSaveFileName(self, "Save Project",
+                                                           default_filename,
+                                                           "GenBBS Project Files (*.gbbs);;All Files (*)",
+                                                           options=options)
+
+            if file_name:
+                if not file_name.endswith(".gbbs"):
+                    file_name += ".gbbs"
+                try:
+                    project_data = self.app_window.current_project.to_dict()
+                    with open(file_name, 'w') as f:
+                        json.dump(project_data, f, indent=4)
+                    QMessageBox.information(self, "GenBBS", "Save Successful")
+                    self.app_window.project_modified = False
+                    self.app_window.current_project_file_path = file_name
+                    return True # Indicate successful save
+                except Exception as e:
+                    QMessageBox.critical(self, "Save Error", f"Could not save project: {e}")
+                    return False # Indicate failed save
+            else:
+                return False # User cancelled save dialog
+        else:
+            QMessageBox.warning(self, "No Project", "No active project to save.")
+            return False # No project to save
 
 
 # --- Main Application Window ---
