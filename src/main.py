@@ -148,7 +148,12 @@ class Category1Screen(QWidget):
         elif isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'categories'):
             parent_item.categories = [child for child in parent_item.categories if child != item_to_remove]
             return True
-        
+        elif isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'elements'):
+            parent_item.elements = [child for child in parent_item.elements if child != item_to_remove]
+            return True
+        print (hasattr(parent_item, 'children'))
+        print (isinstance(parent_item, (Project, CategoryHigher, CategoryLower)))
+        print(str(parent_item))
         return False
 
     def delete_selected_item(self):
@@ -183,20 +188,26 @@ class Category1Screen(QWidget):
 
     def setup_for_view(self):
         self.connect_buttons()
-        self.label1Catg1.setText(self.app_window.current_project.name)
+        self.label1Catg1.setText("No Item Selected")
         print("setting up")
         self.populate_project_tree()
-        self.input_new_element_catg1.setEnabled(True)
-        self.btn_create_element_catg1.setEnabled(True)
-        self.input_new_sub_catg1.setEnabled(True)
-        self.btn_create_sub_catg1.setEnabled(True)
+        self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
+        self.input_new_element_catg1.setEnabled(False)
+        self.btn_create_element_catg1.setEnabled(False)
+        self.input_new_sub_catg1.setEnabled(False)
+        self.btn_create_sub_catg1.setEnabled(False)
+        self.btn_delete_item_catg1.setEnabled(False)
         
 
     def update_selected_item(self):
         selected_items = self.tree_widget.selectedItems()
-        selected_object = selected_items[0].data(0, Qt.UserRole)
-        if selected_object:
-            self.label1Catg1.setText(f"{selected_object.name}")
+        if selected_items:
+            selected_object = selected_items[0].data(0, Qt.UserRole)
+            if selected_object:
+                text_to_fill = selected_object.name
+                self.label1Catg1.setText(text_to_fill.upper())
+        else:
+            return
 
         if isinstance(selected_object, Project):
             # Disable element creation when Project is selected
@@ -225,6 +236,21 @@ class Category1Screen(QWidget):
                 self.btn_create_element_catg1.setEnabled(True)
             if self.inputElementQtCatg1:
                 self.inputElementQtCatg1.setEnabled(True)
+            if self.btn_delete_item_catg1:
+                self.btn_delete_item_catg1.setEnabled(True)
+        if isinstance(selected_object, Element):
+            # Disable element creation when Project is selected
+            print ("Is instance")
+            if self.input_new_element_catg1:
+                self.input_new_element_catg1.setEnabled(False)
+            if self.btn_create_element_catg1:
+                self.btn_create_element_catg1.setEnabled(False)
+            if self.inputElementQtCatg1:
+                self.inputElementQtCatg1.setEnabled(False)
+            if self.input_new_sub_catg1:
+                self.input_new_sub_catg1.setEnabled(False)
+            if self.btn_create_sub_catg1:
+                self.btn_create_sub_catg1.setEnabled(False)
             if self.btn_delete_item_catg1:
                 self.btn_delete_item_catg1.setEnabled(True)
         elif isinstance(selected_object, CategoryHigher):
@@ -308,6 +334,7 @@ class Category1Screen(QWidget):
     def add_new_element(self):
         element_name = self.input_new_element_catg1.text().strip()
         if not element_name:
+            QMessageBox.warning(self, "Input Error", "Please enter a valid element name.")
             return
 
         quantity_text = self.inputElementQtCatg1.text().strip()
@@ -381,7 +408,6 @@ class Category1Screen(QWidget):
         _add_items(project_item, self.app_window.current_project.categories)
         self.tree_widget.expandAll()
 
-        self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
 
     def find_tree_item_for_object(self, obj, start_item=None):
         """Recursively finds the QTreeWidgetItem associated with a given data object."""
