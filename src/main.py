@@ -96,6 +96,7 @@ class NewProjectScreen(QWidget):
                 self.app_window.current_project_file_path = None
                 self.app_window.update_window_title(project_name) # Update window title with new project name
                 self.app_window.go_to_category1_screen()
+                project_name_input.clear()
             else:
                 QMessageBox.warning(self, "Input Error", "Project name cannot be empty.")
 
@@ -108,6 +109,7 @@ class Category1Screen(QWidget):
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
         self.tree_widget = self.loaded_ui.findChild(QTreeWidget, "treeWidgetCatg1")
+        self.connect_buttons()
         
 
         
@@ -137,7 +139,8 @@ class Category1Screen(QWidget):
 
         self.back_button.clicked.connect(self.prompt_save_project)
         self.save_button.clicked.connect(self.save_current_project)
-        self.btn_create_sub_catg1.clicked.connect(self.add_new_category)        
+        self.btn_create_sub_catg1.clicked.connect(self.add_new_category)      
+        print("Connecting signal")  
         self.btn_create_element_catg1.clicked.connect(self.add_new_element)
         self.btn_delete_item_catg1.clicked.connect(self.delete_selected_item)
 
@@ -180,15 +183,17 @@ class Category1Screen(QWidget):
             if self._remove_item_from_model(parent_object, selected_object):
                 parent_tree_item.removeChild(selected_tree_item)
                 self.app_window.project_modified = True
-                self.update_selected_item()
+                # self.update_selected_item()
             else:
                 QMessageBox.warning(self, "Deletion Error", "Could not remove item from model.")
         else:
             QMessageBox.warning(self, "Deletion Error", "Cannot determine parent of selected item.")
 
     def setup_for_view(self):
-        self.connect_buttons()
+        self.input_new_sub_catg1.clear()
+        self.input_new_element_catg1.clear()
         self.label1Catg1.setText("No Item Selected")
+        self.inputElementQtCatg1.clear()
         print("setting up")
         self.populate_project_tree()
         self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
@@ -253,6 +258,7 @@ class Category1Screen(QWidget):
                 self.btn_create_sub_catg1.setEnabled(False)
             if self.btn_delete_item_catg1:
                 self.btn_delete_item_catg1.setEnabled(True)
+            self.app_window.show_reinforcement_screen(selected_object)
         elif isinstance(selected_object, CategoryHigher):
             # Enable category creation for CategoryHigher
             if self.input_new_sub_catg1:
@@ -313,6 +319,7 @@ class Category1Screen(QWidget):
             if item:
                 self.tree_widget.setCurrentItem(item)
                 self.tree_widget.expandItem(item)
+        print(new_category.to_dict())
 
     def _replace_category_in_model(self, project_or_category, old_category_id, new_category):
         if isinstance(project_or_category, Project):
@@ -332,8 +339,11 @@ class Category1Screen(QWidget):
         return False
 
     def add_new_element(self):
+        print("Here again")
+        print(self.input_new_element_catg1.text())
         element_name = self.input_new_element_catg1.text().strip()
         if not element_name:
+            print(element_name)
             QMessageBox.warning(self, "Input Error", "Please enter a valid element name.")
             return
 
@@ -360,6 +370,7 @@ class Category1Screen(QWidget):
             return
 
         object_to_reselect = None
+        new_element = None
 
         if isinstance(parent_object, CategoryLower):
             new_element = Element(name=element_name, quantity=quantity)
@@ -373,15 +384,18 @@ class Category1Screen(QWidget):
             # Convert CategoryHigher to CategoryLower
             new_category_lower = CategoryLower(name=parent_object.name)
             new_category_lower.id = parent_object.id
+            new_category_lower.parent_tree = parent_object.parent_tree
             new_element = Element(name=element_name, quantity=quantity)
             new_category_lower.add_element(new_element)
 
             # Replace the old CategoryHigher with the new CategoryLower in the project structure
             self._replace_category_in_model(self.app_window.current_project, parent_object.id, new_category_lower)
             object_to_reselect = new_category_lower
+            print("New Category created: ", new_category_lower.to_dict())
 
         self.populate_project_tree()
         self.input_new_element_catg1.clear()
+        self.inputElementQtCatg1.clear()
         self.app_window.project_modified = True
 
         if object_to_reselect:
@@ -389,6 +403,7 @@ class Category1Screen(QWidget):
             if item:
                 self.tree_widget.setCurrentItem(item)
                 self.tree_widget.expandItem(item)
+        print("New Element: ", new_element.to_dict())
     def populate_project_tree(self):
         #Recursive function to populate tree widget
         print("Populating project tree...")
@@ -512,8 +527,26 @@ class ReinforcementScreen(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(loaded_ui)
         self.setLayout(layout)
+        self.element = None
 
-    
+        # Connect the back button
+        self.btn_back_reinf = loaded_ui.findChild(QPushButton, "btnBackReinf")
+        self.btn_back_reinf.clicked.connect(self.go_back_to_category1_screen)
+
+        # Initialize QLabel for element hierarchy
+        self.lbl_element_hierarchy = loaded_ui.findChild(QLabel, "labelHeaderReinf")
+
+    def set_element(self, element):
+        self.element = element
+        # Construct and display the parent hierarchy
+        hierarchy_names = [item['name'] for item in element.parent_tree] + [element.name]
+        self.lbl_element_hierarchy.setText(" > ".join(hierarchy_names))
+        print(f"ReinforcementScreen received element: {self.element.name}")
+
+    def go_back_to_category1_screen(self):
+        # This method will be connected to a 'Back' button in the UI
+        self.app_window.go_to_category1_screen()
+        self.element = None
 
 
 # --- Main Application Window ---
@@ -547,12 +580,14 @@ class ApplicationWindow(QMainWindow):
         self.main_menu_screen = MainMenuScreen(self)
         self.new_project_screen = NewProjectScreen(self)
         self.category1_screen = Category1Screen(self)
+        self.reinforcement_screen = ReinforcementScreen(self)
 
         # Add screens to stacked widget
         self.stacked_widget.addWidget(self.loading_screen_widget)
         self.stacked_widget.addWidget(self.main_menu_screen)
         self.stacked_widget.addWidget(self.new_project_screen)
         self.stacked_widget.addWidget(self.category1_screen)
+        self.stacked_widget.addWidget(self.reinforcement_screen)
 
         # Set initial screen
         self.go_to_main_menu_screen()
@@ -592,11 +627,9 @@ class ApplicationWindow(QMainWindow):
         print("Landed")
         self.category1_screen.setup_for_view()
 
-    # def go_to_element_management_screen(self):
-    #     self.stacked_widget.setCurrentWidget(self.element_management_screen)
-
-    # def go_to_reinforcement_screen(self):
-    #     self.stacked_widget.setCurrentWidget(self.reinforcement_screen)
+    def show_reinforcement_screen(self, element):
+        self.reinforcement_screen.set_element(element)
+        self.stacked_widget.setCurrentWidget(self.reinforcement_screen)
 
 
 # --- Application Entry Point ---

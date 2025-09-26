@@ -139,58 +139,6 @@ color: black;
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QLabel" name="labelHeaderReinf2">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">
-	
-background-image: url(:/images/Reinf_Dispersed_Backdrop.jpeg);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-color: black;
-</string>
-              </property>
-              <property name="text">
-               <string>i.e Ground Floor</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="labelHeaderReinf3">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">
-	
-background-image: url(:/images/Reinf_Dispersed_Backdrop.jpeg);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-color: black;
-</string>
-              </property>
-              <property name="text">
-               <string>i.e Beam 01</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
