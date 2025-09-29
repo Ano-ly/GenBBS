@@ -18,7 +18,9 @@ class Bar:
         self.cut_length = self.calculate_cut_length()
         self.unit_weight, self.total_weight = self.calculate_weight()
         self.parent_tree = parent_tree if parent_tree is not None else []
-
+    def recalculate_properties(self):
+        self.cut_length = self.calculate_cut_length()
+        self.unit_weight, self.total_weight = self.calculate_weight()
     def _get_bend_radius(self) -> float:
         """
         Determines the bend radius based on the bar's diameter and assumed steel type,
@@ -50,6 +52,8 @@ class Bar:
         calculator_func = CUT_LENGTH_FORMULAS.get(self.shape_code)
         if calculator_func:
             bend_radius = self._get_bend_radius()
+            print(bend_radius)
+            print(float(''.join(filter(str.isdigit, self.diameter))))
             return calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius)
         else:
             # Fallback for unknown shape codes, or raise an error

@@ -81,6 +81,7 @@ def calculate_cut_length_shape_21(lengths: dict, diameter: float, bend_radius: f
     B = lengths.get("B", 0)
     C = lengths.get("C", 0)
     # r is the internal bend radius, d is the diameter
+    print (f"Bend radius:{bend_radius}, diameter: {diameter}, A:{A}, B:{B}, C{C}")
     return (A + B + C - (bend_radius) - (2 * diameter)) / 1000.0
 
 def calculate_cut_length_shape_22(lengths: dict, diameter: float, bend_radius: float) -> float:

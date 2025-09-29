@@ -6,6 +6,7 @@ import resources
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
+from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
 
 # --- Screen Classes (will eventually be in separate files) ---
 class LoadingScreenWidget(QWidget):
@@ -534,6 +535,9 @@ class ReinforcementScreen(QWidget):
         # Initialize QLabel for element hierarchy
         self.lbl_element_hierarchy = self.loaded_ui.findChild(QLabel, "labelHeaderReinf")
         self.connect_ui_elements()
+        self.populate_combo_boxes()
+        self.update_shape_image()
+        self._update_dimension_input_states()
 
     def connect_ui_elements(self):
         # Line Edits
@@ -552,7 +556,6 @@ class ReinforcementScreen(QWidget):
         self.f_dimension = self.loaded_ui.findChild(QLineEdit, "fDimension")
         self.r_dimension = self.loaded_ui.findChild(QLineEdit, "rDimension")
         self.d_dimension = self.loaded_ui.findChild(QLineEdit, "dDimension")
-
         # Buttons
         self.btn_serial_no_reinf = self.loaded_ui.findChild(QPushButton, "serialNoReinf")
         self.btn_next_reinf = self.loaded_ui.findChild(QPushButton, "btnNextReinf")
@@ -564,14 +567,214 @@ class ReinforcementScreen(QWidget):
         self.label_serial_no_reinf = self.loaded_ui.findChild(QLabel, "serialNoReinf")
         self.label_formula_reinf = self.loaded_ui.findChild(QLabel, "formulaReinf")
         self.label_shape_display_reinf = self.loaded_ui.findChild(QLabel, "shapeDisplayReinf")
+        self.shape_code_reinf.currentIndexChanged.connect(self.update_shape_image)
+        self.shape_code_reinf.currentIndexChanged.connect(self._update_dimension_input_states)
+
 
         # Table Widget
         self.table_widget_reinf = self.loaded_ui.findChild(QTableWidget, "tableWidgetReinf")
+        # self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
+        self.table_widget_reinf.itemSelectionChanged.connect(self.load_bar_data_to_form)
+        self.btn_delete_item_catg1 = self.loaded_ui.findChild(QPushButton, "btnDeleteItemCatg1")
+        self.btn_delete_item_catg1.clicked.connect(self.delete_selected_bar)
+        # self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
+        
+
+    def delete_selected_bar(self):
+        selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.information(self, "No Selection", "Please select one or more bars to delete.")
+            return
+
+        reply = QMessageBox.question(self, 'Delete Bars',
+                                     f"Are you sure you want to delete {len(selected_rows)} selected bar(s)?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            # Sort in reverse order to delete from the end, avoiding index issues
+            rows_to_delete = sorted([index.row() for index in selected_rows], reverse=True)
+            
+            for row_index in rows_to_delete:
+                if 0 <= row_index < len(self.element.bars):
+                    del self.element.bars[row_index]
+            
+            self.populate_bars_table() # Refresh the table display once after all deletions
+            QMessageBox.information(self, "Deletion Successful", f"{len(selected_rows)} selected bar(s) have been deleted.")
+            self.app_window.project_modified = True
+        
+        self.table_widget_reinf.resizeColumnsToContents()
+
+    def handle_bar_table_item_changed(self, item):
+        # Disconnect to prevent recursive calls during programmatic updates
+        self.table_widget_reinf.itemChanged.disconnect(self.handle_bar_table_item_changed)
+
+        row = item.row()
+        col = item.column()
+        new_value = item.text()
+
+        if not self.element or row >= len(self.element.bars):
+            # Reconnect and return if no element or invalid row
+            self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
+            return
+
+        bar = self.element.bars[row]
+        updated = False
+
+        try:
+            if col == 0:  # Bar Mark
+                bar.bar_mark = new_value
+                updated = True
+            elif col == 1:  # Shape Code
+                if new_value in SHAPE_CODE_LENGTH_MAP:
+                    bar.shape_code = new_value
+                    updated = True
+                else:
+                    QMessageBox.warning(self, "Invalid Input", f"Invalid Shape Code: {new_value}. Please enter a valid shape code.")
+                    item.setText(bar.shape_code) # Revert to original value
+            elif col == 2:  # Diameter
+                # Assuming diameter is stored as a string like "Y10", extract the number
+                diameter_str = new_value.lstrip('Yy')
+                if diameter_str.isdigit() and int(diameter_str) in MIN_BEND_RADII:
+                    bar.diameter = new_value # Store as "YXX"
+                    updated = True
+                else:
+                    QMessageBox.warning(self, "Invalid Input", f"Invalid Diameter: {new_value}. Please enter a valid diameter (e.g., 'Y10').")
+                    item.setText(bar.diameter) # Revert to original value
+            elif col == 4:  # Number of Bars
+                if new_value.isdigit() and int(new_value) > 0:
+                    bar.number_of_bars = int(new_value)
+                    updated = True
+                else:
+                    QMessageBox.warning(self, "Invalid Input", "Number of Bars must be a positive integer.")
+                    item.setText(str(bar.number_of_bars)) # Revert to original value
+
+            if updated:
+                # Recalculate cut length and weights if relevant properties changed
+                # This assumes that changing bar_mark, shape_code, diameter, or number_of_bars
+                # might affect cut_length, unit_weight, or total_weight.
+                # You might need to call a specific recalculation method here.
+                # For now, we'll just mark project as modified and repopulate.
+                bar.recalculate_properties()  # Trigger recalculation
+                self.app_window.project_modified = True
+                # Re-populate the table to reflect any calculated changes (e.g., cut length, weights)
+                self.populate_bars_table()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while updating bar data: {e}")
+            # Revert the item text to its original value if an error occurs
+            self.populate_bars_table() # A full refresh is safer here
+
+        # Reconnect the signal
+        self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
+    def _clear_input_fields(self):
+        self.input_bar_mark.clear()
+        self.input_no_of_bars.clear()
+        self.input_bar_size_reinf.setCurrentIndex(0)  # Reset combo box to first item
+        self.shape_code_reinf.setCurrentIndex(0)  # Reset combo box to first item
+        self.a_dimension.clear()
+        self.e_dimension.clear()
+        self.b_dimension.clear()
+        self.c_dimension.clear()
+        self.f_dimension.clear()
+        self.r_dimension.clear()
+        self.d_dimension.clear()
+
+    def load_bar_data_to_form(self):
+        selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
+        if selected_rows:
+            row = selected_rows[0].row()
+            if 0 <= row < len(self.element.bars):
+                bar = self.element.bars[row]
+                self.input_bar_mark.setText(str(bar.bar_mark))
+                self.input_no_of_bars.setText(str(bar.number_of_bars))
+
+                # Set diameter combo box
+                diameter_index = self.input_bar_size_reinf.findText(bar.diameter)
+                if diameter_index != -1:
+                    self.input_bar_size_reinf.setCurrentIndex(diameter_index)
+
+                # Set shape code combo box
+                shape_code_index = self.shape_code_reinf.findText(bar.shape_code)
+                if shape_code_index != -1:
+                    self.shape_code_reinf.setCurrentIndex(shape_code_index)
+
+                # Set dimensions
+                self.a_dimension.setText(str(bar.lengths.get("A", "")))
+                self.e_dimension.setText(str(bar.lengths.get("E", "")))
+                self.b_dimension.setText(str(bar.lengths.get("B", "")))
+                self.c_dimension.setText(str(bar.lengths.get("C", "")))
+                self.f_dimension.setText(str(bar.lengths.get("F", "")))
+                self.r_dimension.setText(str(bar.lengths.get("R", "")))
+                self.d_dimension.setText(str(bar.lengths.get("D", "")))
+            else:
+                self._clear_input_fields()
+        else:
+            self._clear_input_fields()
+
+    def populate_combo_boxes(self):
+        # Clear existing items before populating
+        self.input_bar_size_reinf.clear()
+        # Extract unique bar sizes from MIN_BEND_RADII keys and sort them
+        bar_sizes = sorted(list(MIN_BEND_RADII.keys()))
+        for size in bar_sizes:
+            self.input_bar_size_reinf.addItem(f"Y{size}")
+
+        # Populate Shape Code ComboBox
+        self.shape_code_reinf.clear()
+        # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
+        shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
+        for code in shape_codes:
+            self.shape_code_reinf.addItem(code)
+        
+    def update_shape_image(self):
+        self.update_formula_display()
+        selected_shape_code = self.shape_code_reinf.currentText()
+        print(selected_shape_code)
+        if selected_shape_code:
+            image_path = f":/images/{selected_shape_code}.jpg"
+            pixmap = QPixmap(image_path)
+            if not pixmap.isNull():
+                # Scale the pixmap to fit the label while maintaining aspect ratio
+                scaled_pixmap = pixmap.scaled(self.label_shape_display_reinf.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.label_shape_display_reinf.setPixmap(pixmap)
+            else:
+                # Clear the label if image not found
+                self.label_shape_display_reinf.clear()
+        else:
+            self.label_shape_display_reinf.clear()
+
+    def _update_dimension_input_states(self):
+        selected_shape_code = self.shape_code_reinf.currentText()
+        required_dimensions = SHAPE_CODE_LENGTH_MAP.get(selected_shape_code, [])
+
+        # List of all dimension input fields
+        dimension_inputs = {
+            "A": self.a_dimension,
+            "B": self.b_dimension,
+            "C": self.c_dimension,
+            "D": self.d_dimension,
+            "E": self.e_dimension,
+            "F": self.f_dimension,
+            "R": self.r_dimension,
+        }
+
+        for dim_code, input_field in dimension_inputs.items():
+            if dim_code in required_dimensions:
+                input_field.setEnabled(True)
+            else:
+                input_field.clear() # Clear the field if it's disabled
+                input_field.setEnabled(False)
+
+    def update_formula_display(self):
+        selected_shape_code = self.shape_code_reinf.currentText()
+        formula = SHAPE_CODE_FORMULA_STRINGS.get(selected_shape_code, "Formula not available")
+        self.label_formula_reinf.setText(f"Formula: {formula}")
 
     def create_bar_from_inputs(self):
         print("Create Bar button clicked!")
         # Retrieve values from UI elements
-        bar_size = self.input_bar_size_reinf.currentText()
+
+        bar_size_text = self.input_bar_size_reinf.currentText()
         shape_code = self.shape_code_reinf.currentText()
         bar_mark_text = self.input_bar_mark.text()
         no_of_bars_text = self.input_no_of_bars.text()
@@ -600,45 +803,52 @@ class ReinforcementScreen(QWidget):
             QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
             return
 
-        if not bar_size or not shape_code:
-            QMessageBox.warning(self, "Input Error", "Please select Bar Size and Shape Code.")
+        if not bar_size_text or not shape_code:
+            QMessageBox.warning(self, "Input Error", "Please select both Bar Size and Shape Code.")
             return
 
-        # Create Bar object
-        new_bar = Bar(
-            bar_mark=bar_mark,
-            shape_code=shape_code,
-            diameter=bar_size, # Assuming bar_size is the diameter string (e.g., 'Y10')
-            lengths=lengths,
-            number_of_bars=number_of_bars,
-            parent_tree=self.element.parent_tree + [{'id': self.element.element_id, 'name': self.element.name, 'type': 'Element'}]
-        )
+        selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
+        if selected_rows: # Update existing bar
+            row = selected_rows[0].row()
+            if 0 <= row < len(self.element.bars):
+                bar_to_update = self.element.bars[row]
+                bar_to_update.bar_mark = bar_mark
+                bar_to_update.shape_code = shape_code
+                bar_to_update.diameter = bar_size_text
+                bar_to_update.lengths = lengths
+                bar_to_update.number_of_bars = number_of_bars
+                bar_to_update.recalculate_properties() # Recalculate properties after update
+                self.app_window.project_modified = True
+                self.populate_bars_table()
+                self._clear_input_fields()
+                self.table_widget_reinf.clearSelection() # Clear selection after update
+                QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
+            else:
+                QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
+        else: # Create new bar
+            # Create Bar object
+            new_bar = Bar(
+                bar_mark=bar_mark,
+                shape_code=shape_code,
+                diameter=bar_size_text, # Assuming bar_size is the diameter string (e.g., 'Y10')
+                lengths=lengths,
+                number_of_bars=number_of_bars,
+                parent_tree=self.element.parent_tree + [{'id': self.element.element_id, 'name': self.element.name, 'type': 'Element'}]
+            )
 
-        # Add bar to the current element
-        if self.element:
-            self.element.add_bar(new_bar)
-            self.app_window.project_modified = True
-            QMessageBox.information(self, "Success", "Bar added successfully!")
-            self.populate_bars_table()
-            
-            # Clear input fields after successful bar creation
-            self.input_bar_mark.clear()
-            self.input_bar_size_reinf.setCurrentIndex(0) # Reset combo box to first item
-            self.shape_code_reinf.setCurrentIndex(0) # Reset combo box to first item
-            self.input_no_of_bars.clear()
-            self.a_dimension.clear()
-            self.e_dimension.clear()
-            self.b_dimension.clear()
-            self.c_dimension.clear()
-            self.f_dimension.clear()
-            self.r_dimension.clear()
-            self.d_dimension.clear()
-
-        else:
-            QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
+            # Add bar to the current element
+            if self.element:
+                self.element.add_bar(new_bar)
+                self.app_window.project_modified = True
+                self.populate_bars_table()
+                self._clear_input_fields() # Clear input fields after successful bar creation
+                QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
+            else:
+                QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
 
         # Placeholder for UI update logic
         pass
+
 
     def populate_bars_table(self):
         self.table_widget_reinf.setRowCount(0) # Clear existing rows
@@ -828,5 +1038,9 @@ if __name__ == "__main__":
     main_application_window.show()
 
     app.exec()
+
+    
+
+    
 
     

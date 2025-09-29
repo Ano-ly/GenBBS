@@ -1726,7 +1726,7 @@ QPushButton:hover {
              </font>
             </property>
             <property name="text">
-             <string>Categories</string>
+             <string>Project Details</string>
             </property>
            </widget>
           </item>
