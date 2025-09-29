@@ -7,6 +7,7 @@ from src.logic.data_models import Project, CategoryHigher, CategoryLower, Elemen
 import json
 import os
 from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
+from src.excel_exporter import ExcelExporter
 
 # --- Screen Classes (will eventually be in separate files) ---
 class LoadingScreenWidget(QWidget):
@@ -137,6 +138,7 @@ class Category1Screen(QWidget):
         self.btn_create_sub_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateSubCatg1")
         self.btn_create_element_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateElementCatg1")
         self.btn_delete_item_catg1 = self.loaded_ui.findChild(QPushButton, "btnDeleteItemCatg1")
+        self.btn_export_all_excel_catg1 = self.loaded_ui.findChild(QPushButton, "btnExportCatg1")
 
         self.back_button.clicked.connect(self.prompt_save_project)
         self.save_button.clicked.connect(self.save_current_project)
@@ -144,6 +146,8 @@ class Category1Screen(QWidget):
         print("Connecting signal")  
         self.btn_create_element_catg1.clicked.connect(self.add_new_element)
         self.btn_delete_item_catg1.clicked.connect(self.delete_selected_item)
+        if self.btn_export_all_excel_catg1:
+            self.btn_export_all_excel_catg1.clicked.connect(self.handle_export_all_bars)
 
     def _remove_item_from_model(self, parent_item, item_to_remove):
         if isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'children'):
@@ -339,9 +343,17 @@ class Category1Screen(QWidget):
                     return True
         return False
 
+    def handle_export_all_bars(self):
+        if self.app_window.current_project:
+            file_name, _ = QFileDialog.getSaveFileName(
+                self, "Export Project Data to Excel", "project_data.xlsx", "Excel Files (*.xlsx)"
+            )
+            if file_name:
+                ExcelExporter.export_project_bars_to_excel(self.app_window.current_project, file_name)
+        else:
+            QMessageBox.warning(self, "Export Error", "No project loaded to export.")
+
     def add_new_element(self):
-        print("Here again")
-        print(self.input_new_element_catg1.text())
         element_name = self.input_new_element_catg1.text().strip()
         if not element_name:
             print(element_name)
