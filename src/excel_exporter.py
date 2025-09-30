@@ -1,6 +1,6 @@
 import pandas as pd
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Border, Side
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
@@ -27,6 +27,7 @@ class ExcelExporter:
 
         if isinstance(item, Bar):
             row_data.update(item.to_dict())
+
         hierarchical_rows.append(row_data)
 
         if isinstance(item, Project):
@@ -52,83 +53,118 @@ class ExcelExporter:
         ExcelExporter._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows)
 
         # Determine all possible column headers
-        all_headers = set()
-        for row in hierarchical_rows:
-            all_headers.update(row.keys())
-        
-        # Define a consistent order for common headers
-        ordered_headers = ["Type", "Level", "Name", "Path"]
-        # Add other headers, ensuring no duplicates and maintaining order
-        for header in sorted(list(all_headers - set(ordered_headers))):
-            ordered_headers.append(header)
-
+        # all_headers = set()
+        # for row in hierarchical_rows:
+        #     all_headers.update(row.keys())
+        ordered_headers = ["Type", "Level", "Name", "Path", "bar_mark", "diameter", "number_of_bars", "cut_length", "unit_weight", "total_weight", "shape_code", "lengths"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
 
         try:
-            writer = pd.ExcelWriter(file_path, engine='openpyxl')
-            df.to_excel(writer, sheet_name='Project Data', index=False)
-            workbook = writer.book
-            worksheet = writer.sheets['Project Data']
+            with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='Project Data', index=False)
+                workbook = writer.book
+                worksheet = writer.sheets['Project Data']
 
-            # Apply formatting
-            header_font = Font(bold=True)
-            project_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid") # Light Blue
-            category_higher_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Light Green
-            category_lower_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Light Orange
-            element_fill = PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid") # Light Peach
-            bar_fill = PatternFill(start_color="F8F8F8", end_color="F8F8F8", fill_type="solid") # Light Gray
+                #styles
+                header_font = Font(bold=True)
+                category_font = Font(bold=True, size=16, underline="single")
+                element_font = Font(size=12, underline="single")
+                bar_font = Font(size=10)
+                project_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid") #
+                normal_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
-            thin_border = Border(left=Side(style='thin'),
-                                 right=Side(style='thin'),
-                                 top=Side(style='thin'),
-                                 bottom=Side(style='thin'))
+                thin_border = Border(left=Side(style='thin'),
+                                    right=Side(style='thin'),
+                                    top=Side(style='thin'),
+                                    bottom=Side(style='thin'))
 
-            # Apply header formatting
-            for col_num, value in enumerate(df.columns.values):
-                worksheet.cell(row=1, column=col_num + 1).font = header_font
-                worksheet.cell(row=1, column=col_num + 1).border = thin_border
+                header_row_idx = 1
+                header_row = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
+                col_map = {name: idx for idx, name in enumerate(header_row)}
+                #Headers of columns to be deleted
+                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name"]
+                #Current cell headers and their corresponding proper cell headers for Bar Bending Schedule
+                proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "shape_code": "Shape Code", "number_of_bars":"No. in Each", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size"}
+                list_of_names = dict()
+                max_widths_of_columns = dict()
 
-            # Apply row formatting and grouping
-            for r_idx, row_data in df.iterrows():
-                row_type = row_data["Type"]
-                row_level = row_data["Level"]
+                for row in worksheet.iter_rows():
+                    row_index = row[0].row
+
+                    # Header row formatting
+                    if row_index == 1:
+                        for cell in row:
+                            cell.font = header_font
+                            cell.border = thin_border                       
+                    #Height formatting
+                    worksheet.row_dimensions[row_index].height = 60               
+                    #color, font and alignment formatting
+                    center_align = Alignment(horizontal="center", vertical="center")
+                    row_type = row[col_map["Type"]].value
+                    row_level = row[col_map["Level"]].value
+                    #Store the names of sub headers
+                    if row_type != "Bar":
+                        row_name = row[col_map["Name"]].value
+                        list_of_names[row_index] = row_name.upper()
+                    fill = normal_fill
+                    font = None
+                    # row_name = row[col_map["Name"]].value
+                    if row_type == "Project":
+                        fill = project_fill
+                        font = category_font
+                    elif row_type == "CategoryHigher" or row_type == "CategoryLower":
+                        font = category_font
+                    elif row_type == "Element":
+                        font = element_font
+                    elif row_type == "Bar":
+                        font = bar_font
+                    for cell in row:
+                        #Set alignment
+                        column_name = next((k for k, v in col_map.items() if v == cell.column - 1), None)
+                        max_widths_of_columns[column_name] = max(max_widths_of_columns.get(column_name, 0), len(str(cell.value)))
+                        print(cell.value)
+                        print(max_widths_of_columns)
+                        cell.alignment = center_align
+                        if row_index != header_row_idx:
+                            if fill:
+                                cell.fill = fill
+                            if font:
+                                cell.font = font
+                            cell.border = thin_border        
+                    # Set outline level for grouping
+                    if row_index != header_row_idx:
+                        worksheet.row_dimensions[row_index].outlineLevel = int(row_level)
+                        worksheet.row_dimensions[row_index].hidden = False
+                        
+                for col in range(worksheet.max_column, 0, -1):
+                    cell_value = worksheet.cell(row=header_row_idx, column=col).value
+                    #Delete irrelevant columns
+                    if cell_value in target_headers:
+                        worksheet.delete_cols(col)
+                        continue
+                for col in range(worksheet.max_column, 0, -1):
+                    print(col)
+                    cell_value = worksheet.cell(row=header_row_idx, column=col).value
+                    #Adjust column width
+                    column = get_column_letter(col)
+                    adjusted_width = max((max_widths_of_columns.get(cell_value, 0), len(proper_cell_headers.get(cell_value, cell_value)))) + 2
+                    print(f"Adej: {adjusted_width}, {cell_value}")
+                    worksheet.column_dimensions[column].width = adjusted_width    
+                    #Change column or header names to appropriate ones
+                    if cell_value in proper_cell_headers.keys():
+                        worksheet.cell(row=header_row_idx, column=col, value=proper_cell_headers[cell_value])
+
+                #Add names of sub-headers to the first row of each sub-header group
+                header_row_trimmed = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
+                col_map_trimmed = {name: idx for idx, name in enumerate(header_row_trimmed)}
+                for row in worksheet.iter_rows():
+                    row_index = row[0].row
+                    if row_index != 1:
+                        row_bar_mark = row[col_map_trimmed["Bar Mark"]].value
+                        if row_bar_mark == "" or row_bar_mark is None:
+                            worksheet.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=worksheet.max_column)
+                            worksheet.cell(row=row_index, column=1, value=list_of_names[row_index])
                 
-                fill = None
-                if row_type == "Project":
-                    fill = project_fill
-                elif row_type == "CategoryHigher":
-                    fill = category_higher_fill
-                elif row_type == "CategoryLower":
-                    fill = category_lower_fill
-                elif row_type == "Element":
-                    fill = element_fill
-                elif row_type == "Bar":
-                    fill = bar_fill
-
-                for col_num in range(1, len(df.columns) + 1):
-                    cell = worksheet.cell(row=r_idx + 2, column=col_num)
-                    if fill:
-                        cell.fill = fill
-                    cell.border = thin_border
-                
-                # Set outline level for grouping
-                worksheet.row_dimensions[r_idx + 2].outlineLevel = row_level
-                worksheet.row_dimensions[r_idx + 2].hidden = False # Ensure rows are visible by default
-
-            # Auto-fit columns
-            for col in df.columns:
-                max_length = 0
-                column = get_column_letter(df.columns.get_loc(col) + 1)
-                for cell in worksheet[column]:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = (max_length + 2)
-                worksheet.column_dimensions[column].width = adjusted_width
-
-            writer.close()
-            QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
+                QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")

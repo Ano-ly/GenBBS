@@ -82,13 +82,13 @@ class Bar:
         return {
             "bar_id": self.bar_id,
             "bar_mark": self.bar_mark,
-            "shape_code": self.shape_code,
             "diameter": self.diameter, # Stored as string
-            "lengths": self.lengths,
             "number_of_bars": self.number_of_bars,
             "cut_length": self.cut_length,
             "unit_weight": self.unit_weight,
             "total_weight": self.total_weight,
+            "shape_code": self.shape_code,
+            "lengths": self.lengths, 
             "parent_tree": self.parent_tree,
         }
 
