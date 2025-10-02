@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/edit.png</file>
     <file>images/Save button.png</file>
     <file>images/done.jpeg</file>
     <file>images/GenBBS Logo.png</file>

@@ -6,14 +6,51 @@ from openpyxl.worksheet.cell_range import CellRange
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 from typing import List, Dict, Any, Union
+import math
 
 class ExcelExporter:
+    @staticmethod
+    def _collect_element_quantities(current_item: Union[Project, CategoryHigher, CategoryLower, Element], element_quantities: Dict[str, int]):
+        if isinstance(current_item, Element):
+            element_quantities[current_item.id] = current_item.quantity
+
+        children_to_check = []
+        if isinstance(current_item, Project):
+            children_to_check.extend(current_item.categories)
+        elif isinstance(current_item, CategoryHigher):
+            children_to_check.extend(current_item.children)
+        elif isinstance(current_item, CategoryLower):
+            children_to_check.extend(current_item.elements)
+
+        for child in children_to_check:
+            ExcelExporter._collect_element_quantities(child, element_quantities)
+
+    @staticmethod
+    def _compute_adjusted_bar_properties(element_quantities: Dict[str, int], bar_dict: Dict[str, Any]) -> Dict[str, Any]:
+        bar = Bar.from_dict(bar_dict)
+        
+        for parent_info in bar.parent_tree:
+            if parent_info.get('type') == 'Element':
+                parent_id = parent_info.get('id')
+                break
+
+        element_quantity = element_quantities.get(parent_id, 1)
+
+        total_number_of_bars_adjusted = bar.number_of_bars * element_quantity
+        total_length_adjusted = bar.cut_length * bar.number_of_bars * element_quantity
+        total_weight_adjusted = math.ceil(bar.total_weight * element_quantity)
+
+        bar_dict["total_no_of_bars"] = total_number_of_bars_adjusted
+        bar_dict["total_length"] = total_length_adjusted
+        bar_dict["total_weight"] = total_weight_adjusted
+        return bar_dict
 
     @staticmethod
     def _collect_hierarchical_data_recursive(item: Union[Project, CategoryHigher, CategoryLower, Element, Bar],
                                             level: int,
                                             parent_path: List[str],
-                                            hierarchical_rows: List[Dict[str, Any]]):
+                                            hierarchical_rows: List[Dict[str, Any]], 
+                                            element_quantities: Dict[str, int]):
         item_type = type(item).__name__
         item_name = getattr(item, 'name', '') if hasattr(item, 'name') else ''
         current_path = parent_path + [item_name]
@@ -26,22 +63,24 @@ class ExcelExporter:
         }
 
         if isinstance(item, Bar):
-            row_data.update(item.to_dict())
+            row_data.update(ExcelExporter._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
 
         hierarchical_rows.append(row_data)
 
         if isinstance(item, Project):
             for category in item.categories:
-                ExcelExporter._collect_hierarchical_data_recursive(category, level + 1, current_path, hierarchical_rows)
+                ExcelExporter._collect_hierarchical_data_recursive(category, level + 1, current_path, hierarchical_rows, element_quantities)
         elif isinstance(item, CategoryHigher):
             for child in item.children:
-                ExcelExporter._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows)
+                ExcelExporter._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities)
         elif isinstance(item, CategoryLower):
             for element in item.elements:
-                ExcelExporter._collect_hierarchical_data_recursive(element, level + 1, current_path, hierarchical_rows)
+                ExcelExporter._collect_hierarchical_data_recursive(element, level + 1, current_path, hierarchical_rows, element_quantities) 
         elif isinstance(item, Element):
+            btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths"}
+            hierarchical_rows.append(btw_headers)
             for bar in item.bars:
-                ExcelExporter._collect_hierarchical_data_recursive(bar, level + 1, current_path, hierarchical_rows)
+                ExcelExporter._collect_hierarchical_data_recursive(bar, level + 1, current_path, hierarchical_rows, element_quantities)
 
     @staticmethod
     def export_project_bars_to_excel(project: Project, file_path: str):
@@ -49,14 +88,17 @@ class ExcelExporter:
             QMessageBox.warning(None, "Export Error", "No project loaded to export.")
             return
 
+        element_quantities = {}
+        ExcelExporter._collect_element_quantities(project, element_quantities)
+
         hierarchical_rows = []
-        ExcelExporter._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows)
+        ExcelExporter._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows, element_quantities)
 
         # Determine all possible column headers
         # all_headers = set()
         # for row in hierarchical_rows:
         #     all_headers.update(row.keys())
-        ordered_headers = ["Type", "Level", "Name", "Path", "bar_mark", "diameter", "number_of_bars", "cut_length", "unit_weight", "total_weight", "shape_code", "lengths"]
+        ordered_headers = ["Type", "Level", "Name", "Path", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
 
         try:
@@ -82,17 +124,19 @@ class ExcelExporter:
                 header_row = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
                 col_map = {name: idx for idx, name in enumerate(header_row)}
                 #Headers of columns to be deleted
-                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name"]
+                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name", "unit_weight"]
                 #Current cell headers and their corresponding proper cell headers for Bar Bending Schedule
-                proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "shape_code": "Shape Code", "number_of_bars":"No. in Each", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size"}
+                proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "shape_code": "Shape Code", "number_of_bars":"No. in Each", "total_no_of_bars" : "Total No. of Bars" ,"total_length" : "Total Length", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size", "lengths": "Lengths"}
                 list_of_names = dict()
                 max_widths_of_columns = dict()
 
                 for row in worksheet.iter_rows():
                     row_index = row[0].row
+                    row_type = row[col_map["Type"]].value
+                    row_level = row[col_map["Level"]].value
 
                     # Header row formatting
-                    if row_index == 1:
+                    if row_index == 1 or row_type == "Type":
                         for cell in row:
                             cell.font = header_font
                             cell.border = thin_border                       
@@ -100,8 +144,6 @@ class ExcelExporter:
                     worksheet.row_dimensions[row_index].height = 60               
                     #color, font and alignment formatting
                     center_align = Alignment(horizontal="center", vertical="center")
-                    row_type = row[col_map["Type"]].value
-                    row_level = row[col_map["Level"]].value
                     #Store the names of sub headers
                     if row_type != "Bar":
                         row_name = row[col_map["Name"]].value
@@ -165,6 +207,12 @@ class ExcelExporter:
                             worksheet.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=worksheet.max_column)
                             worksheet.cell(row=row_index, column=1, value=list_of_names[row_index])
                 
+                #Remove initial header
+                # worksheet.delete_rows(1)
+
+                
                 QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")
+
+    

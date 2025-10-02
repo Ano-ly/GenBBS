@@ -54,11 +54,12 @@ class Bar:
             bend_radius = self._get_bend_radius()
             print(bend_radius)
             print(float(''.join(filter(str.isdigit, self.diameter))))
-            return calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius)
+            return calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius) * 1000
         else:
             # Fallback for unknown shape codes, or raise an error
             print(f"Warning: No cut length formula found for shape code {self.shape_code}. Summing lengths.")
-            return sum(self.lengths.values()) / 1000.0 # Convert mm to meters
+            raw = sum(self.lengths.values())
+            return math.ceil(raw / 10) * 10
 
     def calculate_weight(self) -> tuple[float, float]:
         """
@@ -72,7 +73,7 @@ class Bar:
         diameter_m = numeric_diameter / 1000.0
         area = 3.14159 * (diameter_m / 2)**2
         unit_weight = area * 7850 # kg/m
-        total_weight = self.cut_length * unit_weight * self.number_of_bars
+        total_weight = (self.cut_length/1000) * unit_weight * self.number_of_bars
         return unit_weight, total_weight
 
     def to_dict(self) -> dict:
@@ -118,11 +119,46 @@ class Element:
     Represents a structural element containing multiple Bar objects.
     """
     def __init__(self, name: str, quantity: int = 1, parent_tree: list[dict] = None):
-        self.element_id = str(uuid.uuid4()) # Unique ID for each element
-        self.name = name
+        self.id = str(uuid.uuid4()) # Unique ID for each element
+        self._name = name
         self.quantity = quantity
         self.bars: list[Bar] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        if self._name != new_name:
+            self._name = new_name
+            self._update_child_parent_trees()
+    def _sync_parent_tree_names(self, child_parent_tree: list[dict]) -> list[dict]:
+        """
+        Ensures that every entry in child_parent_tree (except the one belonging to this CategoryLower)
+        matches the corresponding entry in self.parent_tree by both id and type.
+        If the name differs, it updates the child's entry to match self.parent_tree.
+        """
+        # Build a lookup for self.parent_tree: (id, type) -> name
+        own_lookup = {(entry.get('id'), entry.get('type')): entry.get('name')
+                      for entry in self.parent_tree}
+
+        for entry in child_parent_tree:
+            key = (entry.get('id'), entry.get('type'))
+            if key in own_lookup and entry.get('name') != own_lookup[key]:
+                entry['name'] = own_lookup[key]
+        return (child_parent_tree)
+
+    def _update_child_parent_trees(self):
+        for bar in self.bars:
+            for parent_info in bar.parent_tree:
+                if parent_info.get('id') == self.id and parent_info.get('type') == 'Element':
+                    parent_info['name'] = self._name
+
+    def _update_other_child_parent_trees(self):
+        for bar in self.bars:
+            bar.parent_tree = self._sync_parent_tree_names(bar.parent_tree)
 
     def add_bar(self, bar: Bar):
         # Ensure the bar has a unique ID within this element
@@ -131,7 +167,7 @@ class Element:
             bar.bar_id = str(uuid.uuid4()) # Generate a new ID until it's unique
         
         # Set the parent_tree for the bar
-        bar.parent_tree = self.parent_tree + [{'id': self.element_id, 'name': self.name, 'type': 'Element'}]
+        bar.parent_tree = self.parent_tree + [{'id': self.id, 'name': self.name, 'type': 'Element'}]
         self.bars.append(bar)
 
     def remove_bar(self, bar_id: str) -> bool:
@@ -141,7 +177,7 @@ class Element:
 
     def to_dict(self) -> dict:
         return {
-            "element_id": self.element_id,
+            "id": self.id,
             "name": self.name,
             "quantity": self.quantity,
             "bars": [bar.to_dict() for bar in self.bars],
@@ -153,7 +189,7 @@ class Element:
         if "name" not in data:
             raise ValueError("Element name is required.")
         element = cls(name=data["name"], quantity=data.get("quantity", 1), parent_tree=data.get("parent_tree", []))
-        element.element_id = data.get("element_id", str(uuid.uuid4()))
+        element.id = data.get("id", str(uuid.uuid4()))
         element.bars = [Bar.from_dict(bar_data) for bar_data in data.get("bars", [])]
         return element
 
@@ -164,23 +200,60 @@ class CategoryLower:
     """
     def __init__(self, name: str, parent_tree: list[dict] = None):
         self.id = str(uuid.uuid4()) # Unique ID for each subcategory
-        self.name = name
+        self._name = name
         self.elements: list[Element] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        if self._name != new_name:
+            self._name = new_name
+            self._update_child_parent_trees()
+
+    def _sync_parent_tree_names(self, child_parent_tree: list[dict]) -> list[dict]:
+        """
+        Ensures that every entry in child_parent_tree (except the one belonging to this CategoryLower)
+        matches the corresponding entry in self.parent_tree by both id and type.
+        If the name differs, it updates the child's entry to match self.parent_tree.
+        """
+        # Build a lookup for self.parent_tree: (id, type) -> name
+        own_lookup = {(entry.get('id'), entry.get('type')): entry.get('name')
+                      for entry in self.parent_tree}
+
+        for entry in child_parent_tree:
+            key = (entry.get('id'), entry.get('type'))
+            if key in own_lookup and entry.get('name') != own_lookup[key]:
+                entry['name'] = own_lookup[key]
+        return (child_parent_tree)
+
+    def _update_child_parent_trees(self):
+        for element in self.elements:
+            for parent_info in element.parent_tree:
+                if parent_info.get('id') == self.id and parent_info.get('type') == 'CategoryLower':
+                    parent_info['name'] = self._name
+            element._update_other_child_parent_trees()
+
+    def _update_other_child_parent_trees(self):
+        for element in self.elements:
+            element.parent_tree = self._sync_parent_tree_names(element.parent_tree)
+            element._update_other_child_parent_trees()
     def add_element(self, element: Element):
         # Ensure the element has a unique ID within this subcategory
-        existing_element_ids = {e.element_id for e in self.elements}
-        while element.element_id in existing_element_ids:
-            element.element_id = str(uuid.uuid4()) # Generate a new ID until it's unique
+        existing_ids = {e.id for e in self.elements}
+        while element.id in existing_ids:
+            element.id = str(uuid.uuid4()) # Generate a new ID until it's unique
         
         # Set the parent_tree for the element
         element.parent_tree = self.parent_tree + [{'id': self.id, 'name': self.name, 'type': 'CategoryLower'}]
         self.elements.append(element)
 
-    def remove_element(self, element_id: str) -> bool:
+    def remove_element(self, id: str) -> bool:
         initial_len = len(self.elements)
-        self.elements = [e for e in self.elements if e.element_id != element_id]
+        self.elements = [e for e in self.elements if e.id != id]
         return len(self.elements) < initial_len
 
     def to_dict(self) -> dict:
@@ -206,9 +279,46 @@ class CategoryHigher:
     """
     def __init__(self, name: str, parent_tree: list[dict] = None):
         self.id = str(uuid.uuid4()) # Unique ID for each category
-        self.name = name
+        self._name = name
         self.children: list[Union['CategoryLower', 'CategoryHigher']] = []
         self.parent_tree = parent_tree if parent_tree is not None else []
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        if self._name != new_name:
+            self._name = new_name
+            self._update_child_parent_trees()
+    def _sync_parent_tree_names(self, child_parent_tree: list[dict]) -> list[dict]:
+        """
+        Ensures that every entry in child_parent_tree (except the one belonging to this CategoryLower)
+        matches the corresponding entry in self.parent_tree by both id and type.
+        If the name differs, it updates the child's entry to match self.parent_tree.
+        """
+        # Build a lookup for self.parent_tree: (id, type) -> name
+        own_lookup = {(entry.get('id'), entry.get('type')): entry.get('name')
+                      for entry in self.parent_tree}
+
+        for entry in child_parent_tree:
+            key = (entry.get('id'), entry.get('type'))
+            if key in own_lookup and entry.get('name') != own_lookup[key]:
+                entry['name'] = own_lookup[key]
+        return (child_parent_tree)
+
+    def _update_child_parent_trees(self):
+        for child in self.children:
+            for parent_info in child.parent_tree:
+                if parent_info.get('id') == self.id and parent_info.get('type') == 'CategoryHigher':
+                    parent_info['name'] = self._name
+            child._update_other_child_parent_trees()
+
+    def _update_other_child_parent_trees(self):
+        for child in self.children:
+            child.parent_tree = self._sync_parent_tree_names(child.parent_tree)
+            child._update_other_child_parent_trees()
 
     def add_child(self, child: Union['CategoryLower', 'CategoryHigher']):
         # Ensure the child has a unique ID within this category
@@ -256,8 +366,45 @@ class Project:
     """
     def __init__(self, name: str):
         self.id = str(uuid.uuid4()) # Unique ID for each project
-        self.name = name
+        self._name = name
         self.categories: list[Union['CategoryLower', 'CategoryHigher']] = []
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        if self._name != new_name:
+            self._name = new_name
+            self._update_child_parent_trees()
+    def _sync_parent_tree_names(self, child_parent_tree: list[dict]) -> list[dict]:
+        """
+        Ensures that every entry in child_parent_tree (except the one belonging to this CategoryLower)
+        matches the corresponding entry in self.parent_tree by both id and type.
+        If the name differs, it updates the child's entry to match self.parent_tree.
+        """
+        # Build a lookup for self.parent_tree: (id, type) -> name
+        own_lookup = {(entry.get('id'), entry.get('type')): entry.get('name')
+                      for entry in self.parent_tree}
+
+        for entry in child_parent_tree:
+            key = (entry.get('id'), entry.get('type'))
+            if key in own_lookup and entry.get('name') != own_lookup[key]:
+                entry['name'] = own_lookup[key]
+        return (child_parent_tree)
+
+    def _update_child_parent_trees(self):
+        for category in self.categories:
+            for parent_info in category.parent_tree:
+                if parent_info.get('id') == self.id and parent_info.get('type') == 'Project':
+                    parent_info['name'] = self._name
+            category._update_other_child_parent_trees()
+
+    def _update_other_child_parent_trees(self):
+        for category in self.categories:
+            category.parent_tree = self._sync_parent_tree_names(category.parent_tree)
+            category._update_other_child_parent_trees()
 
     def add_category(self, category: Union['CategoryLower', 'CategoryHigher']):
         # Ensure the category has a unique ID within this project

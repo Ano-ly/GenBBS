@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter # Re-adding QPixmap and QPainter
@@ -139,6 +139,7 @@ class Category1Screen(QWidget):
         self.btn_create_element_catg1 = self.loaded_ui.findChild(QPushButton, "btnCreateElementCatg1")
         self.btn_delete_item_catg1 = self.loaded_ui.findChild(QPushButton, "btnDeleteItemCatg1")
         self.btn_export_all_excel_catg1 = self.loaded_ui.findChild(QPushButton, "btnExportCatg1")
+        self.btn_edit_name_catg1 = self.loaded_ui.findChild(QPushButton, "btnEditNameCatg1")
 
         self.back_button.clicked.connect(self.prompt_save_project)
         self.save_button.clicked.connect(self.save_current_project)
@@ -148,6 +149,8 @@ class Category1Screen(QWidget):
         self.btn_delete_item_catg1.clicked.connect(self.delete_selected_item)
         if self.btn_export_all_excel_catg1:
             self.btn_export_all_excel_catg1.clicked.connect(self.handle_export_all_bars)
+        if self.btn_edit_name_catg1:
+            self.btn_edit_name_catg1.clicked.connect(self._on_edit_name_button_clicked)
 
     def _remove_item_from_model(self, parent_item, item_to_remove):
         if isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'children'):
@@ -519,8 +522,36 @@ class Category1Screen(QWidget):
 
     def save_project_and_go_back(self):
         if self.save_current_project(): # Call the new save method
-            self.app_window.go_to_main_menu_screen() # Navigate after successful save
-        # If save_current_project returns False, it means save was cancelled or failed, so stay on current screen
+            self.app_window.go_to_main_menu_screen()
+
+    def _on_edit_name_button_clicked(self):
+        selected_items = self.tree_widget.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Edit Name", "Please select an item to edit its name.")
+            return
+
+        selected_tree_item = selected_items[0]
+        selected_object = selected_tree_item.data(0, Qt.UserRole)
+
+        # if selected_object == self.app_window.current_project:
+        #     QMessageBox.warning(self, "Edit Name", "Cannot edit the name of the root project.")
+        #     return
+
+        current_name = selected_object.name
+        new_name, ok = QInputDialog.getText(self, "Edit Name", "Enter new name:", QLineEdit.Normal, current_name)
+
+        if ok and new_name and new_name != current_name:
+            selected_object.name = new_name
+            self.app_window.project_modified = True
+            self.populate_project_tree()
+            self.update_selected_item() # Refresh the display of the selected item
+            # Re-select the item after repopulating the tree
+            item = self.find_tree_item_for_object(selected_object, self.tree_widget.invisibleRootItem())
+            if item:
+                self.tree_widget.setCurrentItem(item)
+                self.tree_widget.expandItem(item)
+        elif ok and not new_name:
+            QMessageBox.warning(self, "Edit Name", "Name cannot be empty.")
 
 
 class ElementManagementScreen(QWidget):
@@ -576,11 +607,13 @@ class ReinforcementScreen(QWidget):
 
         # Labels
         self.label_header_reinf = self.loaded_ui.findChild(QLabel, "labelHeaderReinf")
-        self.label_serial_no_reinf = self.loaded_ui.findChild(QLabel, "serialNoReinf")
+        self.element_no_reinf = self.loaded_ui.findChild(QLineEdit, "elementNoReinf") # Changed from QLabel to QLineEdit
         self.label_formula_reinf = self.loaded_ui.findChild(QLabel, "formulaReinf")
         self.label_shape_display_reinf = self.loaded_ui.findChild(QLabel, "shapeDisplayReinf")
+        self.label_quantity_reinf = self.loaded_ui.findChild(QLabel, "labelQtReinf")
         self.shape_code_reinf.currentIndexChanged.connect(self.update_shape_image)
         self.shape_code_reinf.currentIndexChanged.connect(self._update_dimension_input_states)
+        self.element_no_reinf.editingFinished.connect(self._update_element_quantity)
 
 
         # Table Widget
@@ -845,7 +878,7 @@ class ReinforcementScreen(QWidget):
                 diameter=bar_size_text, # Assuming bar_size is the diameter string (e.g., 'Y10')
                 lengths=lengths,
                 number_of_bars=number_of_bars,
-                parent_tree=self.element.parent_tree + [{'id': self.element.element_id, 'name': self.element.name, 'type': 'Element'}]
+                parent_tree=self.element.parent_tree + [{'id': self.element.id, 'name': self.element.name, 'type': 'Element'}]
             )
 
             # Add bar to the current element
@@ -879,7 +912,7 @@ class ReinforcementScreen(QWidget):
             self.table_widget_reinf.setItem(row, 2, QTableWidgetItem(bar.diameter))
             self.table_widget_reinf.setItem(row, 3, QTableWidgetItem(str(bar.lengths)))
             self.table_widget_reinf.setItem(row, 4, QTableWidgetItem(str(bar.number_of_bars)))
-            self.table_widget_reinf.setItem(row, 5, QTableWidgetItem(f"{bar.cut_length:.2f} m"))
+            self.table_widget_reinf.setItem(row, 5, QTableWidgetItem(f"{bar.cut_length:.2f} mm"))
             self.table_widget_reinf.setItem(row, 6, QTableWidgetItem(f"{bar.unit_weight:.2f} kg/m"))
             self.table_widget_reinf.setItem(row, 7, QTableWidgetItem(f"{bar.total_weight:.2f} kg"))
 
@@ -890,8 +923,34 @@ class ReinforcementScreen(QWidget):
         # Construct and display the parent hierarchy
         hierarchy_names = [item['name'] for item in element.parent_tree] + [element.name]
         self.lbl_element_hierarchy.setText(" > ".join(hierarchy_names))
+        self.element_no_reinf.setText(f"{self.element.quantity}")
+        self.label_quantity_reinf.setText(f"Quantity of {self.element.name}:")
         print(f"ReinforcementScreen received element: {self.element.name}")
         self.populate_bars_table() # Populate table when element is set
+
+    def _update_element_quantity(self):
+        if not self.element:
+            return
+
+        try:
+            new_quantity = int(self.element_no_reinf.text())
+            if new_quantity <= 0:
+                QMessageBox.warning(self, "Invalid Input", "Quantity must be a positive integer.")
+                self.element_no_reinf.setText(str(self.element.quantity)) # Revert to original
+                return
+            
+            if self.element.quantity != new_quantity:
+                self.element.quantity = new_quantity
+                self.app_window.project_modified = True
+                QMessageBox.information(self, "Quantity Updated", f"Element quantity updated to {new_quantity}.")
+
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Input", "Please enter a valid integer for quantity.")
+            self.element_no_reinf.setText(str(self.element.quantity)) # Revert to original
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
+            self.element_no_reinf.setText(str(self.element.quantity)) # Revert to original
+
 
     def go_back_to_category1_screen(self):
         # This method will be connected to a 'Back' button in the UI
