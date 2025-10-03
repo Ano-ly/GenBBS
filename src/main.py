@@ -1,13 +1,14 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
-from PySide6.QtGui import QPixmap, QPainter # Re-adding QPixmap and QPainter
+from PySide6.QtGui import QPixmap, QPainter, QIcon# Re-adding QPixmap and QPainter
 import resources
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
 from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
 from src.excel_exporter import ExcelExporter
+
 
 # --- Screen Classes (will eventually be in separate files) ---
 class LoadingScreenWidget(QWidget):
@@ -793,8 +794,17 @@ class ReinforcementScreen(QWidget):
         self.shape_code_reinf.clear()
         # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
         shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
+        
+        image_base_path = "assets/images/"
         for code in shape_codes:
-            self.shape_code_reinf.addItem(code)
+            image_path = f"{image_base_path}{code}.jpg"
+            pixmap = QPixmap(image_path)
+            if not pixmap.isNull():
+                scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                icon = QIcon(scaled_pixmap)
+                self.shape_code_reinf.addItem(icon, code)
+            else:
+                self.shape_code_reinf.addItem(code) # Fallback if image not found
         
     def update_shape_image(self):
         self.update_formula_display()

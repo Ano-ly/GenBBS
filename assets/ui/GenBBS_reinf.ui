@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>918</width>
-    <height>865</height>
+    <height>907</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="font">
    <font>
@@ -33,6 +39,9 @@
     </sizepolicy>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+    <property name="sizeConstraint">
+     <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+    </property>
     <item>
      <widget class="QFrame" name="frame1Reinf">
       <property name="sizePolicy">
@@ -163,7 +172,7 @@ background-color: rgb(207, 207, 207);
          <property name="frameShadow">
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,15,1,0,0">
+         <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,15,1,0">
           <property name="spacing">
            <number>10</number>
           </property>
@@ -630,7 +639,7 @@ color: black;
                  <property name="minimumSize">
                   <size>
                    <width>200</width>
-                   <height>25</height>
+                   <height>55</height>
                   </size>
                  </property>
                  <property name="styleSheet">
@@ -638,6 +647,21 @@ color: black;
                  </property>
                  <property name="editable">
                   <bool>true</bool>
+                 </property>
+                 <property name="currentIndex">
+                  <number>-1</number>
+                 </property>
+                 <property name="maxVisibleItems">
+                  <number>8</number>
+                 </property>
+                 <property name="minimumContentsLength">
+                  <number>0</number>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>50</width>
+                   <height>50</height>
+                  </size>
                  </property>
                  <property name="placeholderText">
                   <string>i.e 44</string>
@@ -1182,7 +1206,7 @@ color: black;
                 <enum>Qt::Orientation::Vertical</enum>
                </property>
                <property name="sizeType">
-                <enum>QSizePolicy::Policy::Fixed</enum>
+                <enum>QSizePolicy::Policy::Preferred</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
@@ -1523,18 +1547,8 @@ color: black;
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <spacer name="vSpacer6_1">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::Preferred</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -1569,7 +1583,7 @@ color: black;
          <property name="frameShadow">
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,5,1,1,10">
+         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,5,1,1,10">
           <item>
            <widget class="QLabel" name="label2Reinf">
             <property name="font">
@@ -1582,16 +1596,6 @@ color: black;
             </property>
             <property name="text">
              <string>Shape</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame">
-            <property name="frameShape">
-             <enum>QFrame::Shape::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Shadow::Raised</enum>
             </property>
            </widget>
           </item>

@@ -48,8 +48,8 @@
     <file>images/64.jpg</file>
     <file>images/67.jpg</file>
     <file>images/75.jpg</file>
-    <file>images/76.jpg</file>
     <file>images/98.jpg</file>
+    <file>images/77.jpg</file>
     <file>ui/GenBBS_reinf.ui</file>
   </qresource>
   <qresource prefix="newPrefix"/>
