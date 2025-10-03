@@ -75,7 +75,7 @@ SHAPE_CODE_LENGTH_MAP = {
     "75": ["A", "B"],
     "77": ["A", "C"],
     "98": ["A", "B", "C", "D"],
-    "99": [] # For all other shapes where standard shapes cannot be used, no specific lengths
+    "99": ["A", "B", "C", "D", "E", "F", "R"] # For all other shapes where standard shapes cannot be used, no specific lengths
 }
 
 CUT_LENGTH_FORMULAS = {

@@ -205,13 +205,39 @@ class Category1Screen(QWidget):
         print("setting up")
         self.populate_project_tree()
         self.tree_widget.itemSelectionChanged.connect(self.update_selected_item)
+        self.tree_widget.itemDoubleClicked.connect(self.handle_double_click_element)
         self.input_new_element_catg1.setEnabled(False)
         self.btn_create_element_catg1.setEnabled(False)
         self.input_new_sub_catg1.setEnabled(False)
         self.btn_create_sub_catg1.setEnabled(False)
         self.btn_delete_item_catg1.setEnabled(False)
         
-
+    def handle_double_click_element(self):
+        selected_items = self.tree_widget.selectedItems()
+        if selected_items:
+            selected_object = selected_items[0].data(0, Qt.UserRole)
+            if selected_object:
+                text_to_fill = selected_object.name
+                self.label1Catg1.setText(text_to_fill.upper())
+        else:
+            return
+        if isinstance(selected_object, Element):
+            # Disable element creation when Project is selected
+            print ("Is instance")
+            if self.input_new_element_catg1:
+                self.input_new_element_catg1.setEnabled(False)
+            if self.btn_create_element_catg1:
+                self.btn_create_element_catg1.setEnabled(False)
+            if self.inputElementQtCatg1:
+                self.inputElementQtCatg1.setEnabled(False)
+            if self.input_new_sub_catg1:
+                self.input_new_sub_catg1.setEnabled(False)
+            if self.btn_create_sub_catg1:
+                self.btn_create_sub_catg1.setEnabled(False)
+            if self.btn_delete_item_catg1:
+                self.btn_delete_item_catg1.setEnabled(True)
+            self.app_window.show_reinforcement_screen(selected_object)
+        
     def update_selected_item(self):
         selected_items = self.tree_widget.selectedItems()
         if selected_items:
@@ -266,7 +292,6 @@ class Category1Screen(QWidget):
                 self.btn_create_sub_catg1.setEnabled(False)
             if self.btn_delete_item_catg1:
                 self.btn_delete_item_catg1.setEnabled(True)
-            self.app_window.show_reinforcement_screen(selected_object)
         elif isinstance(selected_object, CategoryHigher):
             # Enable category creation for CategoryHigher
             if self.input_new_sub_catg1:

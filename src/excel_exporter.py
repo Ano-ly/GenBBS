@@ -59,8 +59,11 @@ class ExcelExporter:
             "Type": item_type,
             "Level": level,
             "Name": item_name,
-            "Path": " > ".join(current_path)
+            "Path": " > ".join(current_path),
+            "Quantity": 0
         }
+        if isinstance(item, Element):
+            row_data["Quantity"] = item.quantity
 
         if isinstance(item, Bar):
             row_data.update(ExcelExporter._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
@@ -77,7 +80,7 @@ class ExcelExporter:
             for element in item.elements:
                 ExcelExporter._collect_hierarchical_data_recursive(element, level + 1, current_path, hierarchical_rows, element_quantities) 
         elif isinstance(item, Element):
-            btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths"}
+            btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths"}
             hierarchical_rows.append(btw_headers)
             for bar in item.bars:
                 ExcelExporter._collect_hierarchical_data_recursive(bar, level + 1, current_path, hierarchical_rows, element_quantities)
@@ -98,7 +101,7 @@ class ExcelExporter:
         # all_headers = set()
         # for row in hierarchical_rows:
         #     all_headers.update(row.keys())
-        ordered_headers = ["Type", "Level", "Name", "Path", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
+        ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
 
         try:
@@ -124,10 +127,11 @@ class ExcelExporter:
                 header_row = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
                 col_map = {name: idx for idx, name in enumerate(header_row)}
                 #Headers of columns to be deleted
-                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name", "unit_weight"]
+                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name", "unit_weight","Quantity"]
                 #Current cell headers and their corresponding proper cell headers for Bar Bending Schedule
                 proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "shape_code": "Shape Code", "number_of_bars":"No. in Each", "total_no_of_bars" : "Total No. of Bars" ,"total_length" : "Total Length", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size", "lengths": "Lengths"}
                 list_of_names = dict()
+                list_of_quantities = dict()
                 max_widths_of_columns = dict()
 
                 for row in worksheet.iter_rows():
@@ -144,10 +148,15 @@ class ExcelExporter:
                     worksheet.row_dimensions[row_index].height = 60               
                     #color, font and alignment formatting
                     center_align = Alignment(horizontal="center", vertical="center")
+                    left_align = Alignment(horizontal="left", vertical="center")
                     #Store the names of sub headers
-                    if row_type != "Bar":
+                    if row_type != "Bar" and row_type != "Type":
                         row_name = row[col_map["Name"]].value
                         list_of_names[row_index] = row_name.upper()
+                        if row_type == "Element":
+                            row_quantity = row[col_map["Quantity"]].value
+                            list_of_quantities[row_index] = row_quantity
+                    
                     fill = normal_fill
                     font = None
                     # row_name = row[col_map["Name"]].value
@@ -166,7 +175,10 @@ class ExcelExporter:
                         max_widths_of_columns[column_name] = max(max_widths_of_columns.get(column_name, 0), len(str(cell.value)))
                         print(cell.value)
                         print(max_widths_of_columns)
-                        cell.alignment = center_align
+                        if row_type == "Bar" or row_type == "Type":
+                            cell.alignment = center_align
+                        else:
+                            cell.alignment = left_align
                         if row_index != header_row_idx:
                             if fill:
                                 cell.fill = fill
@@ -196,7 +208,7 @@ class ExcelExporter:
                     if cell_value in proper_cell_headers.keys():
                         worksheet.cell(row=header_row_idx, column=col, value=proper_cell_headers[cell_value])
 
-                #Add names of sub-headers to the first row of each sub-header group
+                #Add names of sub-headers and quantities to the first row of each sub-header group
                 header_row_trimmed = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
                 col_map_trimmed = {name: idx for idx, name in enumerate(header_row_trimmed)}
                 for row in worksheet.iter_rows():
@@ -204,8 +216,27 @@ class ExcelExporter:
                     if row_index != 1:
                         row_bar_mark = row[col_map_trimmed["Bar Mark"]].value
                         if row_bar_mark == "" or row_bar_mark is None:
-                            worksheet.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=worksheet.max_column)
-                            worksheet.cell(row=row_index, column=1, value=list_of_names[row_index])
+                            qt_cell = worksheet.cell(row=row_index, column=1)
+                            name_cell = worksheet.cell(row=row_index, column=2)
+                            no_border = Border(left=Side(style='thin'),
+                                                right=Side(style='dashed'),
+                                                top=Side(style='thin'),
+                                                bottom=Side(style='thin'))
+                            no_border2 = Border(left=Side(style='dashed'),
+                                                right=Side(style='thin'),
+                                                top=Side(style='thin'),
+                                                bottom=Side(style='thin'))
+                            qt_cell.border = no_border
+                            name_cell.border = no_border2
+                            if row_index not in list_of_quantities.keys():
+                                worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
+                                worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])
+                            else:
+                                worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
+                                worksheet.cell(row=row_index, column=1, value=list_of_quantities[row_index])
+                                right_align = Alignment(horizontal="right", vertical="center")
+                                qt_cell.alignment = right_align
+                                worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])
                 
                 #Remove initial header
                 # worksheet.delete_rows(1)

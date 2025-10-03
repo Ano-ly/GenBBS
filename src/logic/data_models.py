@@ -54,7 +54,8 @@ class Bar:
             bend_radius = self._get_bend_radius()
             print(bend_radius)
             print(float(''.join(filter(str.isdigit, self.diameter))))
-            return calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius) * 1000
+            raw = calculator_func(self.lengths, float(''.join(filter(str.isdigit, self.diameter))), bend_radius) * 1000
+            return math.ceil(raw / 10) * 10
         else:
             # Fallback for unknown shape codes, or raise an error
             print(f"Warning: No cut length formula found for shape code {self.shape_code}. Summing lengths.")
