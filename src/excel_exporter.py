@@ -40,6 +40,11 @@ class ExcelExporter:
         total_length_adjusted = bar.cut_length * bar.number_of_bars * element_quantity
         total_weight_adjusted = math.ceil(bar.total_weight * element_quantity)
 
+        if bar.bar_mark < 10:
+            bar_dict["bar_mark"] = f"0{bar.bar_mark}"
+        else:
+            bar_dict["bar_mark"] = str(bar.bar_mark)
+
         bar_dict["total_no_of_bars"] = total_number_of_bars_adjusted
         bar_dict["total_length"] = total_length_adjusted
         bar_dict["total_weight"] = total_weight_adjusted

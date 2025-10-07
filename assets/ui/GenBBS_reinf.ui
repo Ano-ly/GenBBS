@@ -86,6 +86,7 @@
          <property name="font">
           <font>
            <family>Times New Roman</family>
+           <pointsize>3</pointsize>
           </font>
          </property>
          <property name="layoutDirection">
@@ -133,6 +134,17 @@ padding-right: 5px;
 #btnBackReinf:hover {
 background-color:rgb(170, 170, 170)
 }
+#btnSettingsReinf:hover {
+background-color:rgb(170, 170, 170)
+}
+#btnSettingsReinf {
+
+border-radius: 5px;
+color: black;
+padding-left: 5px;
+padding-right: 5px;
+}
+
 #btnDeleteItemCatg1 {
 background-color: rgb(255, 255, 255);
 border-radius: 5px;
@@ -177,7 +189,7 @@ background-color: rgb(207, 207, 207);
            <number>10</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0">
             <item>
              <widget class="QPushButton" name="btnBackReinf">
               <property name="sizePolicy">
@@ -224,6 +236,17 @@ background-color: rgb(207, 207, 207);
               <property name="icon">
                <iconset resource="../app_resources.qrc">
                 <normaloff>:/images/Save button.png</normaloff>:/images/Save button.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnSettingsReinf">
+              <property name="text">
+               <string>Settings</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../app_resources.qrc">
+                <normaloff>:/images/settings.png</normaloff>:/images/settings.png</iconset>
               </property>
              </widget>
             </item>

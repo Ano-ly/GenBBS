@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog, QDialog, QCheckBox
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QIcon# Re-adding QPixmap and QPainter
@@ -8,6 +8,8 @@ import json
 import os
 from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
 from src.excel_exporter import ExcelExporter
+# from src.gui.settings_screen import SettingsScreen
+from PySide6.QtCore import QSettings
 
 
 # --- Screen Classes (will eventually be in separate files) ---
@@ -590,9 +592,10 @@ class ElementManagementScreen(QWidget):
         self.setLayout(layout)
 
 class ReinforcementScreen(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, settings_manager=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
+        self.settings_manager = settings_manager
         self.loaded_ui = QUiLoader().load("assets/ui/GenBBS_reinf.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
@@ -607,6 +610,7 @@ class ReinforcementScreen(QWidget):
         self.populate_combo_boxes()
         self.update_shape_image()
         self._update_dimension_input_states()
+        self._apply_settings() # Apply settings on initialization
 
     def connect_ui_elements(self):
         # Line Edits
@@ -650,6 +654,68 @@ class ReinforcementScreen(QWidget):
         self.btn_delete_item_catg1.clicked.connect(self.delete_selected_bar)
         # self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
         
+
+        # Settings Button
+        self.btn_settings_reinf = self.loaded_ui.findChild(QPushButton, "btnSettingsReinf")
+        if self.btn_settings_reinf:
+            self.btn_settings_reinf.clicked.connect(self._open_settings_dialog)
+
+    def _open_settings_dialog(self):
+        settings_dialog = SettingsScreen(self.settings_manager, self)
+        print("Settings before opening dialog: \n")
+        for key in self.settings_manager.settings.allKeys():
+            value = self.settings_manager.settings.value(key)
+            print(f"{key}: {value}")
+        print("\n")
+        settings_dialog._populate_ui_from_settings()
+        if settings_dialog.exec() == QDialog.Accepted:
+            # Settings were saved, re-apply them to the ReinforcementScreen
+            self._apply_settings()
+
+    def _apply_settings(self):
+        # Retrieve settings
+        map_bool = {"true": True, "false": False}
+        is_autofill_enabled= map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")]
+        is_autogen_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")]   
+        is_allowkey_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")]  
+
+        no_of_bars = self.settings_manager.get_setting("reinforcement/noOfBarsSett")
+        if is_autofill_enabled == True: 
+            print("\n\n\n\n Autofill is enabledd!!!  \n\n")
+            a_dim = self.settings_manager.get_setting("reinforcement/aSett")
+            b_dim = self.settings_manager.get_setting("reinforcement/bSett")
+            c_dim = self.settings_manager.get_setting("reinforcement/cSett")
+            d_dim = self.settings_manager.get_setting("reinforcement/dSett")
+            e_dim = self.settings_manager.get_setting("reinforcement/eSett")
+            f_dim = self.settings_manager.get_setting("reinforcement/fSett")
+            r_dim = self.settings_manager.get_setting("reinforcement/rSett")
+            bar_size = self.settings_manager.get_setting("reinforcement/barSizeSett")
+            shape_code = self.settings_manager.get_setting("reinforcement/shapeCodeSett")
+
+            # Apply settings to UI elements
+            self.input_no_of_bars.setText(str(no_of_bars))
+            self.a_dimension.setText(str(a_dim))
+            self.b_dimension.setText(str(b_dim))
+            self.c_dimension.setText(str(c_dim))
+            self.d_dimension.setText(str(d_dim))
+            self.e_dimension.setText(str(e_dim))
+            self.f_dimension.setText(str(f_dim))
+            self.r_dimension.setText(str(r_dim))
+
+            # Set current text for combo boxes, ensuring the value exists in the combo box
+            index = self.input_bar_size_reinf.findText(bar_size)
+            if index != -1:
+                self.input_bar_size_reinf.setCurrentIndex(index)
+            
+            index = self.shape_code_reinf.findText(str(shape_code))
+            if index != -1:
+                self.shape_code_reinf.setCurrentIndex(index)
+        else:
+            self._clear_input_fields()
+
+        print(f"Auto-fill setting applied: {is_autofill_enabled}")
+        print(f"Auto-generate setting applied: {is_autogen_enabled}")
+        print(f"Allow key setting applied: {is_allowkey_enabled}")
 
     def delete_selected_bar(self):
         selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
@@ -842,7 +908,7 @@ class ReinforcementScreen(QWidget):
             if dim_code in required_dimensions:
                 input_field.setEnabled(True)
             else:
-                input_field.clear() # Clear the field if it's disabled
+                # input_field.clear() # Clear the field if it's disabled
                 input_field.setEnabled(False)
 
     def update_formula_display(self):
@@ -868,14 +934,23 @@ class ReinforcementScreen(QWidget):
             "R": self.r_dimension.text(),
             "D": self.d_dimension.text(),
         }
-
+        
         # Basic validation and conversion
         try:
+            if int(''.join(filter(str.isdigit, bar_size_text))) not in MIN_BEND_RADII.keys():
+                QMessageBox.warning(self, "Input Error", "Please select a valid Bar Size.")
+                return
+            if shape_code not in SHAPE_CODE_LENGTH_MAP.keys():
+                QMessageBox.warning(self, "Input Error", "Please select a valid Shape Code.")
+                return
             bar_mark = int(bar_mark_text)
             number_of_bars = int(no_of_bars_text)
             # Convert dimensions to float, only if they are not empty
             lengths = {}
             for key, value in dimensions.items():
+                if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (int(value) == 0 or value == ""):
+                    QMessageBox.warning(self, "Input Error", "Please enter valid numbers for dimensions.")
+                    return
                 if value:
                     lengths[key] = float(value)
 
@@ -901,8 +976,9 @@ class ReinforcementScreen(QWidget):
                 self.app_window.project_modified = True
                 self.populate_bars_table()
                 self._clear_input_fields()
+                self._apply_settings()
                 self.table_widget_reinf.clearSelection() # Clear selection after update
-                QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
+                # QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
             else:
                 QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
         else: # Create new bar
@@ -922,6 +998,7 @@ class ReinforcementScreen(QWidget):
                 self.app_window.project_modified = True
                 self.populate_bars_table()
                 self._clear_input_fields() # Clear input fields after successful bar creation
+                self._apply_settings()
                 QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
             else:
                 QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
@@ -977,7 +1054,7 @@ class ReinforcementScreen(QWidget):
             if self.element.quantity != new_quantity:
                 self.element.quantity = new_quantity
                 self.app_window.project_modified = True
-                QMessageBox.information(self, "Quantity Updated", f"Element quantity updated to {new_quantity}.")
+                # QMessageBox.information(self, "Quantity Updated", f"Element quantity updated to {new_quantity}.")
 
         except ValueError:
             QMessageBox.warning(self, "Invalid Input", "Please enter a valid integer for quantity.")
@@ -1028,6 +1105,280 @@ class ReinforcementScreen(QWidget):
             QMessageBox.warning(self, "No Project", "No active project to save.")
             return False # No project to save
 
+class SettingsScreen(QDialog):
+    def __init__(self, settings_manager, parent=None):
+        super().__init__(parent)
+        self.settings_manager = settings_manager
+        self.loaded_ui = QUiLoader().load("assets/ui/settings.ui")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.loaded_ui)
+        # self._load_ui()
+        self._connect_ui_elements()
+        self._connect_signals()
+        self._populate_combo_boxes()
+        self._populate_ui_from_settings()
+
+        # self._update_autofill_states()
+
+    # def _load_ui(self):
+    #     ui_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'ui', 'settings.ui')
+    #     self.loaded_ui = uic.loadUi(ui_file_path, self)
+
+    def _connect_ui_elements(self):
+        # Buttons
+        self.btnSaveSett = self.loaded_ui.findChild(QPushButton, "btnSaveSett")
+        self.btnCancelSett = self.loaded_ui.findChild(QPushButton, "btnCancelSett")
+
+        # Checkboxes
+        self.chBoxAutoFillSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoFillSett")
+        self.chBoxAutoGenSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoGenSett")
+        self.chBoxAllowKeySett = self.loaded_ui.findChild(QCheckBox, "chBoxAllowKeySett")
+
+        # Line Edits
+        self.noOfBarsSett = self.loaded_ui.findChild(QLineEdit, "noOfBarsSett")
+        self.aSett = self.loaded_ui.findChild(QLineEdit, "aSett")
+        self.bSett = self.loaded_ui.findChild(QLineEdit, "bSett")
+        self.cSett = self.loaded_ui.findChild(QLineEdit, "cSett")
+        self.dSett = self.loaded_ui.findChild(QLineEdit, "dSett")
+        self.eSett = self.loaded_ui.findChild(QLineEdit, "eSett")
+        self.fSett = self.loaded_ui.findChild(QLineEdit, "fSett")
+        self.rSett = self.loaded_ui.findChild(QLineEdit, "rSett")
+        # ComboBoxes
+        self.barSizeSett = self.loaded_ui.findChild(QComboBox, "barSizeSett")
+        self.shapeCodeSett = self.loaded_ui.findChild(QComboBox, "shapeCodeSett")
+
+    def _connect_signals(self):
+        # Connect buttons
+        self.btnSaveSett.clicked.connect(self.save_settings)
+        self.btnCancelSett.clicked.connect(self.reject) # QDialog.reject() closes the dialog
+
+        # Connect checkboxes
+        self.chBoxAutoFillSett.stateChanged.connect(self._update_autofill_states)
+
+    def _populate_combo_boxes(self):
+        # Clear existing items before populating
+        print("\nPupluatiing in settings ....\n")
+        self.barSizeSett.clear()
+        # Extract unique bar sizes from MIN_BEND_RADII keys and sort them
+        bar_sizes = sorted(list(MIN_BEND_RADII.keys()))
+        for size in bar_sizes:
+            self.barSizeSett.addItem(f"Y{size}")
+
+        # Populate Shape Code ComboBox
+        self.shapeCodeSett.clear()
+        # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
+        shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
+        
+        image_base_path = "assets/images/"
+        for code in shape_codes:
+            image_path = f"{image_base_path}{code}.jpg"
+            pixmap = QPixmap(image_path)
+            if not pixmap.isNull():
+                scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                icon = QIcon(scaled_pixmap)
+                self.shapeCodeSett.addItem(icon, code)
+            else:
+                self.shapeCodeSett.addItem(code) # Fallback if image not found
+        
+
+    def _populate_ui_from_settings(self):
+        # Checkboxes
+        print("Settings before opening dialog in dialog itself: \n")
+        for key in self.settings_manager.settings.allKeys():
+            value = self.settings_manager.settings.value(key)
+            print(f"{key}: {value}")
+        print("\n")
+        map_bool = {"true": True, "false": False}
+        self.chBoxAutoFillSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")])
+        self.chBoxAutoGenSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")])    
+        self.chBoxAllowKeySett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")])   
+
+        self.noOfBarsSett.setText(str(self.settings_manager.get_setting("reinforcement/noOfBarsSett")))
+        self.aSett.setText(str(self.settings_manager.get_setting("reinforcement/aSett")))
+        self.bSett.setText(str(self.settings_manager.get_setting("reinforcement/bSett")))
+        self.cSett.setText(str(self.settings_manager.get_setting("reinforcement/cSett")))
+        self.dSett.setText(str(self.settings_manager.get_setting("reinforcement/dSett")))
+        self.eSett.setText(str(self.settings_manager.get_setting("reinforcement/eSett")))
+        self.fSett.setText(str(self.settings_manager.get_setting("reinforcement/fSett")))
+        self.rSett.setText(str(self.settings_manager.get_setting("reinforcement/rSett")))
+        # Assuming bar sizes are populated elsewhere or are static. For now, just set the current text.
+        self.barSizeSett.setCurrentText(self.settings_manager.get_setting("reinforcement/barSizeSett"))
+        # Assuming shape codes are populated elsewhere or are static. For now, just set the current text.
+        self.shapeCodeSett.setCurrentText(str(self.settings_manager.get_setting("reinforcement/shapeCodeSett")))
+
+    def save_settings(self):
+        # Checkboxes
+        print(f"Is autofill checked? {self.chBoxAutoFillSett.isChecked()}")
+        self.settings_manager.set_setting("reinforcement/chBoxAutoFillSett", self.chBoxAutoFillSett.isChecked())
+        print(self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett"))
+        self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
+        def safe_int(text):
+            if text.strip() == "":
+                return None
+            try:
+                return int(text)
+            except ValueError:
+                raise ValueError("Invalid integer input")
+        def safe_float(text):
+            if text.strip() == "":
+                print("ONE TEXT IS EMPTY")
+                return None
+            try:
+                return float(text)
+            except ValueError:
+                raise ValueError("Invalid float input")
+        if self.chBoxAutoFillSett.isChecked():
+            try:
+                a_val = safe_float(self.aSett.text())
+                if a_val is not None:
+                    self.settings_manager.set_setting("reinforcement/aSett", a_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/aSett", "")
+
+                b_val = safe_float(self.bSett.text())
+                if b_val is not None:
+                    self.settings_manager.set_setting("reinforcement/bSett", b_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/bSett", "")
+
+                c_val = safe_float(self.cSett.text())
+                if c_val is not None:
+                    self.settings_manager.set_setting("reinforcement/cSett", c_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/cSett", "")
+
+                d_val = safe_float(self.dSett.text())
+                if d_val is not None:
+                    self.settings_manager.set_setting("reinforcement/dSett", d_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/dSett", "")
+
+                e_val = safe_float(self.eSett.text())
+                if e_val is not None:
+                    self.settings_manager.set_setting("reinforcement/eSett", e_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/eSett", "")
+
+                f_val = safe_float(self.fSett.text())
+                if f_val is not None:
+                    self.settings_manager.set_setting("reinforcement/fSett", f_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/fSett", "")
+
+                r_val = safe_float(self.rSett.text())
+                if r_val is not None:
+                    self.settings_manager.set_setting("reinforcement/rSett", r_val)
+                else:
+                    self.settings_manager.set_setting("reinforcement/rSett", "")
+                try:
+                    if int(''.join(filter(str.isdigit, self.barSizeSett.currentText()))) not in MIN_BEND_RADII.keys():
+                        QMessageBox.warning(self, "Input Error", "Please select a valid Bar Size.")
+                        return
+                    if self.shapeCodeSett.currentText() not in SHAPE_CODE_LENGTH_MAP.keys():
+                        QMessageBox.warning(self, "Input Error", "Please select a valid Shape Code.")
+                        return
+
+                except ValueError:
+                    QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
+                    return
+
+                bar_size = self.barSizeSett.currentText()
+                self.settings_manager.set_setting("reinforcement/barSizeSett", bar_size)
+
+                shape_code_text = safe_int(self.shapeCodeSett.currentText())
+                if shape_code_text is not None:
+                    self.settings_manager.set_setting("reinforcement/shapeCodeSett", shape_code_text)
+                else:
+                    self.settings_manager.set_setting("reinforcement/shapeCodeSett", "")
+
+                no_of_bars = safe_int(self.noOfBarsSett.text())
+                if no_of_bars is not None:
+                    self.settings_manager.set_setting("reinforcement/noOfBarsSett", no_of_bars)
+                else:
+                    self.settings_manager.set_setting("reinforcement/noOfBarsSett", "")
+            except Exception as e:
+                QMessageBox.warning(self, "Input Error", f"{e} Please enter valid numbers for all dimension and bar count fields.")
+                return
+        print("Before save: \n")
+        for key in self.settings_manager.settings.allKeys():
+            value = self.settings_manager.settings.value(key)
+            print(f"{key}: {value}")
+        print("\n")
+        self.settings_manager.save_settings()
+        print("After save: \n")
+        for key in self.settings_manager.settings.allKeys():
+            value = self.settings_manager.settings.value(key)
+            print(f"{key}: {value}")
+        print("\n")
+        self.accept() # QDialog.accept() closes the dialog and returns QDialog.Accepted
+
+    def _update_autofill_states(self):
+        is_autofill_enabled = self.chBoxAutoFillSett.isChecked()
+        if not is_autofill_enabled:
+            self.aSett.clear()
+            self.bSett.clear()
+            self.cSett.clear()
+            self.dSett.clear()
+            self.eSett.clear()
+            self.fSett.clear()
+            self.rSett.clear()
+            self.noOfBarsSett.clear()
+            self.barSizeSett.clear()
+            self.shapeCodeSett.clear()
+
+        # Dimension line edits
+        self.aSett.setEnabled(is_autofill_enabled)
+        self.bSett.setEnabled(is_autofill_enabled)
+        self.cSett.setEnabled(is_autofill_enabled)
+        self.dSett.setEnabled(is_autofill_enabled)
+        self.eSett.setEnabled(is_autofill_enabled)
+        self.fSett.setEnabled(is_autofill_enabled)
+        self.rSett.setEnabled(is_autofill_enabled)
+
+        # Number of bars line edit
+        self.noOfBarsSett.setEnabled(is_autofill_enabled)
+        # ComboBoxes
+        self.barSizeSett.setEnabled(is_autofill_enabled)
+        self.shapeCodeSett.setEnabled(is_autofill_enabled)
+
+class SettingsManager:
+    def __init__(self, organization="GenBBS", application="GenBBS"):
+        self.settings = QSettings(organization, application)
+        # self.settings.clear()
+        self._default_settings = {
+            "reinforcement/chBoxAutoFillSett": False,
+            "reinforcement/chBoxAutoGenSett": False,
+            "reinforcement/chBoxAllowKeySett": False,
+            "reinforcement/aSett": "",
+            "reinforcement/bSett": "",
+            "reinforcement/cSett": "",
+            "reinforcement/dSett": "",
+            "reinforcement/eSett": "",
+            "reinforcement/fSett": "",
+            "reinforcement/rSett": "",
+            "reinforcement/noOfBarsSett": "10",
+            "reinforcement/barSizeSett": "10", # Default bar size
+            "reinforcement/shapeCodeSett": "00", # Default shape code
+        }
+        self._apply_default_settings_if_missing()
+
+    def _apply_default_settings_if_missing(self):
+        print("Inherreeeeee")
+        for key, value in self._default_settings.items():
+            if not self.settings.contains(key):
+                self.settings.setValue(key, value)
+        self.settings.sync() # Ensure defaults are written if not present
+
+    def get_setting(self, key):
+        return self.settings.value(key)
+
+    def set_setting(self, key, value):
+        self.settings.setValue(key, value)
+
+    def save_settings(self):
+        self.settings.sync()
+        # Optional: force immediate write if needed for critical settings
 
 # --- Main Application Window ---
 class ApplicationWindow(QMainWindow):
@@ -1044,6 +1395,7 @@ class ApplicationWindow(QMainWindow):
         self.current_project = None # Initialize current_project to None
         self.project_modified = False # Track if the current project has unsaved changes
         self.current_project_file_path = None # Track the file path of the current project
+        self.settings_manager = SettingsManager()
 
         self.setup_screens()
         self.splash_screen.finish(self)
@@ -1060,7 +1412,7 @@ class ApplicationWindow(QMainWindow):
         self.main_menu_screen = MainMenuScreen(self)
         self.new_project_screen = NewProjectScreen(self)
         self.category1_screen = Category1Screen(self)
-        self.reinforcement_screen = ReinforcementScreen(self)
+        self.reinforcement_screen = ReinforcementScreen(self, self.settings_manager)
 
         # Add screens to stacked widget
         self.stacked_widget.addWidget(self.loading_screen_widget)
