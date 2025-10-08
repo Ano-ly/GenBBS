@@ -10,9 +10,8 @@ from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA
 from src.excel_exporter import ExcelExporter
 # from src.gui.settings_screen import SettingsScreen
 from PySide6.QtCore import QSettings
-
-
 # --- Screen Classes (will eventually be in separate files) ---
+
 class LoadingScreenWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -194,6 +193,7 @@ class Category1Screen(QWidget):
             if self._remove_item_from_model(parent_object, selected_object):
                 parent_tree_item.removeChild(selected_tree_item)
                 self.app_window.project_modified = True
+                self._apply_settings()
                 # self.update_selected_item()
             else:
                 QMessageBox.warning(self, "Deletion Error", "Could not remove item from model.")
@@ -612,6 +612,16 @@ class ReinforcementScreen(QWidget):
         self._update_dimension_input_states()
         self._apply_settings() # Apply settings on initialization
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            if self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett") == "true":
+                self.btn_next_reinf.click()
+                event.accept()
+            else:
+                super().keyPressEvent(event)
+        else:
+            super().keyPressEvent(event)
+
     def connect_ui_elements(self):
         # Line Edits
         self.btn_back_reinf = self.loaded_ui.findChild(QPushButton, "btnBackReinf")
@@ -691,6 +701,7 @@ class ReinforcementScreen(QWidget):
             r_dim = self.settings_manager.get_setting("reinforcement/rSett")
             bar_size = self.settings_manager.get_setting("reinforcement/barSizeSett")
             shape_code = self.settings_manager.get_setting("reinforcement/shapeCodeSett")
+        
 
             # Apply settings to UI elements
             self.input_no_of_bars.setText(str(no_of_bars))
@@ -704,18 +715,30 @@ class ReinforcementScreen(QWidget):
 
             # Set current text for combo boxes, ensuring the value exists in the combo box
             index = self.input_bar_size_reinf.findText(bar_size)
+            if bar_size == "":
+                self.input_bar_size_reinf.setCurrentText("")
             if index != -1:
                 self.input_bar_size_reinf.setCurrentIndex(index)
             
             index = self.shape_code_reinf.findText(str(shape_code))
+            if shape_code == "":
+                self.shape_code_reinf.setCurrentText("")
             if index != -1:
                 self.shape_code_reinf.setCurrentIndex(index)
-        else:
-            self._clear_input_fields()
 
         print(f"Auto-fill setting applied: {is_autofill_enabled}")
         print(f"Auto-generate setting applied: {is_autogen_enabled}")
         print(f"Allow key setting applied: {is_allowkey_enabled}")
+
+    def _generate_next_bar_mark(self):
+        if not self.element or not self.element.bars:
+            return 1
+        
+        existing_marks = [bar.bar_mark for bar in self.element.bars if isinstance(bar.bar_mark, int) or (isinstance(bar.bar_mark, str) and bar.bar_mark.isdigit())]
+        if not existing_marks:
+            return 1
+        
+        return max(int(mark) for mark in existing_marks) + 1
 
     def delete_selected_bar(self):
         selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
@@ -803,8 +826,12 @@ class ReinforcementScreen(QWidget):
 
         # Reconnect the signal
         self.table_widget_reinf.itemChanged.connect(self.handle_bar_table_item_changed)
-    def _clear_input_fields(self):
+    def clear_input_fields(self):
         self.input_bar_mark.clear()
+        map_bool = {"true": True, "false": False}
+        is_autogen_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")]
+        if is_autogen_enabled:
+            self.input_bar_mark.setText(str(self._generate_next_bar_mark()))
         self.input_no_of_bars.clear()
         self.input_bar_size_reinf.setCurrentIndex(0)  # Reset combo box to first item
         self.shape_code_reinf.setCurrentIndex(0)  # Reset combo box to first item
@@ -815,6 +842,7 @@ class ReinforcementScreen(QWidget):
         self.f_dimension.clear()
         self.r_dimension.clear()
         self.d_dimension.clear()
+        self._apply_settings()
 
     def load_bar_data_to_form(self):
         selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
@@ -844,9 +872,9 @@ class ReinforcementScreen(QWidget):
                 self.r_dimension.setText(str(bar.lengths.get("R", "")))
                 self.d_dimension.setText(str(bar.lengths.get("D", "")))
             else:
-                self._clear_input_fields()
+                self.clear_input_fields()
         else:
-            self._clear_input_fields()
+            self.clear_input_fields()
 
     def populate_combo_boxes(self):
         # Clear existing items before populating
@@ -924,6 +952,7 @@ class ReinforcementScreen(QWidget):
         shape_code = self.shape_code_reinf.currentText()
         bar_mark_text = self.input_bar_mark.text()
         no_of_bars_text = self.input_no_of_bars.text()
+        print(f"Bar Size: {bar_size_text}, Shape Code: {shape_code}, Bar Mark: {bar_mark_text}, No of Bars: {no_of_bars_text}")
 
         dimensions = {
             "A": self.a_dimension.text(),
@@ -934,6 +963,7 @@ class ReinforcementScreen(QWidget):
             "R": self.r_dimension.text(),
             "D": self.d_dimension.text(),
         }
+        print(dimensions)
         
         # Basic validation and conversion
         try:
@@ -948,13 +978,14 @@ class ReinforcementScreen(QWidget):
             # Convert dimensions to float, only if they are not empty
             lengths = {}
             for key, value in dimensions.items():
-                if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (int(value) == 0 or value == ""):
+                if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (float(value) == 0 or value == ""):
                     QMessageBox.warning(self, "Input Error", "Please enter valid numbers for dimensions.")
                     return
                 if value:
                     lengths[key] = float(value)
 
-        except ValueError:
+        except Exception as e:
+            print(f"{e}\n There was an error here \n")
             QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
             return
 
@@ -975,10 +1006,10 @@ class ReinforcementScreen(QWidget):
                 bar_to_update.recalculate_properties() # Recalculate properties after update
                 self.app_window.project_modified = True
                 self.populate_bars_table()
-                self._clear_input_fields()
-                self._apply_settings()
+                self.clear_input_fields()
+                # self._apply_settings()
                 self.table_widget_reinf.clearSelection() # Clear selection after update
-                # QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
+                QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
             else:
                 QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
         else: # Create new bar
@@ -997,9 +1028,9 @@ class ReinforcementScreen(QWidget):
                 self.element.add_bar(new_bar)
                 self.app_window.project_modified = True
                 self.populate_bars_table()
-                self._clear_input_fields() # Clear input fields after successful bar creation
-                self._apply_settings()
-                QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
+                self.clear_input_fields() # Clear input fields after successful bar creation
+                # self._apply_settings()
+                # QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
             else:
                 QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
 
@@ -1118,22 +1149,14 @@ class SettingsScreen(QDialog):
         self._populate_combo_boxes()
         self._populate_ui_from_settings()
 
-        # self._update_autofill_states()
-
-    # def _load_ui(self):
-    #     ui_file_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'ui', 'settings.ui')
-    #     self.loaded_ui = uic.loadUi(ui_file_path, self)
-
     def _connect_ui_elements(self):
         # Buttons
         self.btnSaveSett = self.loaded_ui.findChild(QPushButton, "btnSaveSett")
         self.btnCancelSett = self.loaded_ui.findChild(QPushButton, "btnCancelSett")
-
         # Checkboxes
         self.chBoxAutoFillSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoFillSett")
         self.chBoxAutoGenSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoGenSett")
         self.chBoxAllowKeySett = self.loaded_ui.findChild(QCheckBox, "chBoxAllowKeySett")
-
         # Line Edits
         self.noOfBarsSett = self.loaded_ui.findChild(QLineEdit, "noOfBarsSett")
         self.aSett = self.loaded_ui.findChild(QLineEdit, "aSett")
@@ -1151,25 +1174,23 @@ class SettingsScreen(QDialog):
         # Connect buttons
         self.btnSaveSett.clicked.connect(self.save_settings)
         self.btnCancelSett.clicked.connect(self.reject) # QDialog.reject() closes the dialog
-
         # Connect checkboxes
         self.chBoxAutoFillSett.stateChanged.connect(self._update_autofill_states)
 
     def _populate_combo_boxes(self):
-        # Clear existing items before populating
-        print("\nPupluatiing in settings ....\n")
         self.barSizeSett.clear()
         # Extract unique bar sizes from MIN_BEND_RADII keys and sort them
         bar_sizes = sorted(list(MIN_BEND_RADII.keys()))
+        self.barSizeSett.addItem("")
         for size in bar_sizes:
             self.barSizeSett.addItem(f"Y{size}")
-
         # Populate Shape Code ComboBox
         self.shapeCodeSett.clear()
         # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
         shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
         
         image_base_path = "assets/images/"
+        self.shapeCodeSett.addItem("")
         for code in shape_codes:
             image_path = f"{image_base_path}{code}.jpg"
             pixmap = QPixmap(image_path)
@@ -1271,16 +1292,17 @@ class SettingsScreen(QDialog):
                     self.settings_manager.set_setting("reinforcement/rSett", r_val)
                 else:
                     self.settings_manager.set_setting("reinforcement/rSett", "")
-                try:
-                    if int(''.join(filter(str.isdigit, self.barSizeSett.currentText()))) not in MIN_BEND_RADII.keys():
-                        QMessageBox.warning(self, "Input Error", "Please select a valid Bar Size.")
+                
+                if self.barSizeSett.currentText() != "":
+                    try:
+                        if int(''.join(filter(str.isdigit, self.barSizeSett.currentText()))) not in MIN_BEND_RADII.keys():
+                            QMessageBox.warning(self, "Input Error", "Please select a valid Bar Size.")
+                            return
+                    except ValueError:
+                        QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
                         return
-                    if self.shapeCodeSett.currentText() not in SHAPE_CODE_LENGTH_MAP.keys():
-                        QMessageBox.warning(self, "Input Error", "Please select a valid Shape Code.")
-                        return
-
-                except ValueError:
-                    QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
+                if self.shapeCodeSett.currentText() not in SHAPE_CODE_LENGTH_MAP.keys() and self.shapeCodeSett.currentText() != "":
+                    QMessageBox.warning(self, "Input Error", "Please select a valid Shape Code.")
                     return
 
                 bar_size = self.barSizeSett.currentText()
@@ -1315,17 +1337,17 @@ class SettingsScreen(QDialog):
 
     def _update_autofill_states(self):
         is_autofill_enabled = self.chBoxAutoFillSett.isChecked()
-        if not is_autofill_enabled:
-            self.aSett.clear()
-            self.bSett.clear()
-            self.cSett.clear()
-            self.dSett.clear()
-            self.eSett.clear()
-            self.fSett.clear()
-            self.rSett.clear()
-            self.noOfBarsSett.clear()
-            self.barSizeSett.clear()
-            self.shapeCodeSett.clear()
+        # if not is_autofill_enabled:
+        #     self.aSett.clear()
+        #     self.bSett.clear()
+        #     self.cSett.clear()
+        #     self.dSett.clear()
+        #     self.eSett.clear()
+        #     self.fSett.clear()
+        #     self.rSett.clear()
+        #     self.noOfBarsSett.clear()
+        #     self.barSizeSett.clear()
+        #     self.shapeCodeSett.clear()
 
         # Dimension line edits
         self.aSett.setEnabled(is_autofill_enabled)
@@ -1357,9 +1379,9 @@ class SettingsManager:
             "reinforcement/eSett": "",
             "reinforcement/fSett": "",
             "reinforcement/rSett": "",
-            "reinforcement/noOfBarsSett": "10",
-            "reinforcement/barSizeSett": "10", # Default bar size
-            "reinforcement/shapeCodeSett": "00", # Default shape code
+            "reinforcement/noOfBarsSett": "",
+            "reinforcement/barSizeSett": "", # Default bar size
+            "reinforcement/shapeCodeSett": "", # Default shape code
         }
         self._apply_default_settings_if_missing()
 
@@ -1461,6 +1483,7 @@ class ApplicationWindow(QMainWindow):
 
     def show_reinforcement_screen(self, element):
         self.reinforcement_screen.set_element(element)
+        self.reinforcement_screen.clear_input_fields()
         self.stacked_widget.setCurrentWidget(self.reinforcement_screen)
 
 
