@@ -7,6 +7,10 @@ from src.logic.data_models import Project, CategoryHigher, CategoryLower, Elemen
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 from typing import List, Dict, Any, Union
 import math
+from src.utils.bar_image_generator import generate_bar_image
+from openpyxl.drawing.image import Image
+from openpyxl.utils import get_column_letter
+import os
 
 class ExcelExporter:
     @staticmethod
@@ -65,13 +69,17 @@ class ExcelExporter:
             "Level": level,
             "Name": item_name,
             "Path": " > ".join(current_path),
-            "Quantity": 0
+            "Quantity": 0,
+            "image_path" : ""
         }
         if isinstance(item, Element):
             row_data["Quantity"] = item.quantity
 
         if isinstance(item, Bar):
             row_data.update(ExcelExporter._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
+            image_path = generate_bar_image(item.shape_code, item.lengths, item.bar_id, r"C:\Users\Amy-Jay\Desktop\programming\GenBBS\src\temp_bar_images")
+            # image_path = generate_bar_image("00", {'A':1000}, 3, "fff")
+            row_data["image_path"] = image_path
 
         hierarchical_rows.append(row_data)
 
@@ -106,7 +114,7 @@ class ExcelExporter:
         # all_headers = set()
         # for row in hierarchical_rows:
         #     all_headers.update(row.keys())
-        ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
+        ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "image_path", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
 
         try:
@@ -143,6 +151,7 @@ class ExcelExporter:
                     row_index = row[0].row
                     row_type = row[col_map["Type"]].value
                     row_level = row[col_map["Level"]].value
+                    row_image = row[col_map["image_path"]].value
 
                     # Header row formatting
                     if row_index == 1 or row_type == "Type":
@@ -178,8 +187,8 @@ class ExcelExporter:
                         #Set alignment
                         column_name = next((k for k, v in col_map.items() if v == cell.column - 1), None)
                         max_widths_of_columns[column_name] = max(max_widths_of_columns.get(column_name, 0), len(str(cell.value)))
-                        print(cell.value)
-                        print(max_widths_of_columns)
+                        # print(cell.value)
+                        # print(max_widths_of_columns)
                         if row_type == "Bar" or row_type == "Type":
                             cell.alignment = center_align
                         else:
@@ -189,7 +198,21 @@ class ExcelExporter:
                                 cell.fill = fill
                             if font:
                                 cell.font = font
-                            cell.border = thin_border        
+                            cell.border = thin_border    
+                    if row_type == "Bar" and row_image != "":
+                        image_path = row_image
+                        if os.path.exists(image_path):
+                            img = Image(image_path)
+                            # Adjust image size if necessary
+                            img.width = 250 # Example width
+                            img.height = 80 # Example height
+                            #Add image to relevant column
+                            img_col_idx = col_map.get("image_path")
+                            if img_col_idx is not None:
+                                cell = row[img_col_idx]
+                                anchor = cell.coordinate
+                                worksheet.add_image(img, anchor)
+                            # os.remove(image_path)
                     # Set outline level for grouping
                     if row_index != header_row_idx:
                         worksheet.row_dimensions[row_index].outlineLevel = int(row_level)
@@ -202,12 +225,12 @@ class ExcelExporter:
                         worksheet.delete_cols(col)
                         continue
                 for col in range(worksheet.max_column, 0, -1):
-                    print(col)
+                    # print(col)
                     cell_value = worksheet.cell(row=header_row_idx, column=col).value
                     #Adjust column width
                     column = get_column_letter(col)
                     adjusted_width = max((max_widths_of_columns.get(cell_value, 0), len(proper_cell_headers.get(cell_value, cell_value)))) + 2
-                    print(f"Adej: {adjusted_width}, {cell_value}")
+                    # print(f"Adej: {adjusted_width}, {cell_value}")
                     worksheet.column_dimensions[column].width = adjusted_width    
                     #Change column or header names to appropriate ones
                     if cell_value in proper_cell_headers.keys():

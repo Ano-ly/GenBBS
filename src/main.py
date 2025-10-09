@@ -981,7 +981,7 @@ class ReinforcementScreen(QWidget):
                 if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (float(value) == 0 or value == ""):
                     QMessageBox.warning(self, "Input Error", "Please enter valid numbers for dimensions.")
                     return
-                if value:
+                if value and key in SHAPE_CODE_LENGTH_MAP[shape_code]:
                     lengths[key] = float(value)
 
         except Exception as e:
