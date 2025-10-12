@@ -204,8 +204,8 @@ class ExcelExporter:
                         if os.path.exists(image_path):
                             img = Image(image_path)
                             # Adjust image size if necessary
-                            img.width = 250 # Example width
-                            img.height = 80 # Example height
+                            img.width = 300 # Example width
+                            img.height = 82 # Example height
                             #Add image to relevant column
                             img_col_idx = col_map.get("image_path")
                             if img_col_idx is not None:
