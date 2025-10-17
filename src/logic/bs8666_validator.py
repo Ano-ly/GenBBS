@@ -584,18 +584,19 @@ def validate_shape_47(dimensions: dict, diameter: int, affected_dims: list[str] 
         is_valid = False
         err_strs.append(f"C must be greater than P[{P_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] < P_value:
-        is_valid = False
-        err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    #Commented out because D is not supplied at the frontend and will eventually equal C
+    # if dimensions['D'] < P_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     if dimensions['C'] > max_value:
         is_valid = False
         err_strs.append(f"C must be less than A [{max_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] > max_value:
-        is_valid = False
-        err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] > max_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     return is_valid, err_strs, affected_dims
 
 def validate_shape_48(dimensions: dict, diameter: int) -> tuple[bool, list[str], list[str]]:
@@ -608,20 +609,19 @@ def validate_shape_48(dimensions: dict, diameter: int) -> tuple[bool, list[str],
         is_valid = False
         err_strs.append(f"C must be greater than P[{P_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] < P_value:
-        is_valid = False
-        err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] < P_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     if dimensions['C'] > max_value:
         is_valid = False
         err_strs.append(f"C must be less than A [{max_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] > max_value:
-        is_valid = False
-        err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] > max_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     return is_valid, err_strs, affected_dims
-    return is_valid, err_strs
 
 def validate_shape_51(dimensions: dict, diameter: int) -> tuple[bool, list[str], list[str]]:
     P_value = P2.get(diameter, 0)
@@ -633,16 +633,19 @@ def validate_shape_51(dimensions: dict, diameter: int) -> tuple[bool, list[str],
         is_valid = False
         err_strs.append(f"C must be greater than P[{P_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] < P_value:
-        is_valid = False
-        err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    # if dimensions['D'] < P_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     if dimensions['C'] > max_value:
         is_valid = False
         err_strs.append(f"C must be less than A and B [{max_value}]: See BS8666:2020")
-    if dimensions['D'] > max_value:
-        is_valid = False
-        err_strs.append(f"D must be less than A and B [{max_value}]: See BS8666:2020")
-    return is_valid, err_strs
+        affected_dims.append('C')
+    # if dimensions['D'] > max_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be less than A and B [{max_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
+    return is_valid, err_strs, affected_dims
 
 def validate_shape_52(dimensions: dict, diameter: int) -> tuple[bool, list[str], list[str]]:
     P_value = P2.get(diameter, 0)
@@ -654,18 +657,18 @@ def validate_shape_52(dimensions: dict, diameter: int) -> tuple[bool, list[str],
         is_valid = False
         err_strs.append(f"C must be greater than P[{P_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] < P_value:
-        is_valid = False
-        err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] < P_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     if dimensions['C'] > max_value:
         is_valid = False
         err_strs.append(f"C must be less than B [{max_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] > max_value:
-        is_valid = False
-        err_strs.append(f"D must be less than B [{max_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] > max_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be less than B [{max_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     return is_valid, err_strs, affected_dims
 
 def validate_shape_56(dimensions: dict, diameter: int) -> tuple[bool, list[str], list[str]]:
@@ -702,18 +705,18 @@ def validate_shape_63(dimensions: dict, diameter: int) -> tuple[bool, list[str],
         is_valid = False
         err_strs.append(f"C must be greater than P[{P_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] < P_value:
-        is_valid = False
-        err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] < P_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be greater than P[{P_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     if dimensions['C'] > max_value:
         is_valid = False
         err_strs.append(f"C must be less than A [{max_value}]: See BS8666:2020")
         affected_dims.append('C')
-    if dimensions['D'] > max_value:
-        is_valid = False
-        err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
-        affected_dims.append('D')
+    # if dimensions['D'] > max_value:
+    #     is_valid = False
+    #     err_strs.append(f"D must be less than A [{max_value}]: See BS8666:2020")
+    #     affected_dims.append('D')
     return is_valid, err_strs, affected_dims
 
 def validate_shape_64(dimensions: dict, diameter: int) -> tuple[bool, list[str], list[str]]:

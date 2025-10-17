@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 import math
-from src.config.config import CUT_LENGTH_FORMULAS, MIN_BEND_RADII
+from src.logic.cut_length_calculator import CUT_LENGTH_FORMULAS
+from src.config.config import MIN_BEND_RADII
 from typing import Union
 
 class Bar:   
