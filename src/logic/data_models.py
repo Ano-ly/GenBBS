@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 import math
-from src.config import CUT_LENGTH_FORMULAS, MIN_BEND_RADII
+from src.config.config import CUT_LENGTH_FORMULAS, MIN_BEND_RADII
 from typing import Union
 
 class Bar:   
@@ -193,6 +193,9 @@ class Element:
         element.id = data.get("id", str(uuid.uuid4()))
         element.bars = [Bar.from_dict(bar_data) for bar_data in data.get("bars", [])]
         return element
+    
+    def get_children(self) -> list[Bar]:
+        return self.bars
 
 
 class CategoryLower:
@@ -272,6 +275,9 @@ class CategoryLower:
         category_lower.id = data.get("id", str(uuid.uuid4())) # Ensure id is set, generate if missing
         category_lower.elements = [Element.from_dict(element_data) for element_data in data.get("elements", [])]
         return category_lower
+    
+    def get_children(self) -> list[Element]:
+        return self.elements
 
 
 class CategoryHigher:
@@ -360,6 +366,8 @@ class CategoryHigher:
                 category_higher.children.append(CategoryHigher.from_dict(child_data))
         return category_higher
 
+    def get_children(self) -> list[Union['CategoryLower', 'CategoryHigher']]:
+        return self.children
 
 class Project:
     """
@@ -443,3 +451,6 @@ class Project:
             elif category_data["type"] == "CategoryHigher":
                 project.categories.append(CategoryHigher.from_dict(category_data))
         return project
+
+    def get_children(self) -> list[Union['CategoryLower', 'CategoryHigher']]:
+        return self.categories

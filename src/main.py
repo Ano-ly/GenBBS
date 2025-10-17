@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog, QDialog, QCheckBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplashScreen, QLineEdit, QPushButton, QMessageBox, QStackedWidget, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QLabel, QComboBox, QTableWidget, QTableWidgetItem, QInputDialog, QDialog, QCheckBox, QProgressBar
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QIcon# Re-adding QPixmap and QPainter
@@ -6,7 +6,8 @@ import resources
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
-from src.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
+from src.config.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
+from src.logic.bs8666_validator import validate_bar_dimensions
 from src.excel_exporter import ExcelExporter
 # from src.gui.settings_screen import SettingsScreen
 from PySide6.QtCore import QSettings
@@ -16,7 +17,7 @@ class LoadingScreenWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
-        loaded_ui = QUiLoader().load("assets/ui/GenBBS_loading.ui")
+        loaded_ui = QUiLoader().load(":/ui/GenBBS_loading.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(loaded_ui)
         self.setLayout(layout)
@@ -25,7 +26,7 @@ class MainMenuScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
-        self.loaded_ui = QUiLoader().load("assets/ui/GenBBS.ui")
+        self.loaded_ui = QUiLoader().load(":/ui/GenBBS.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
@@ -74,7 +75,7 @@ class NewProjectScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent  # Store reference to ApplicationWindow
-        self.loaded_ui = QUiLoader().load("assets/ui/GenBBS_newprj.ui")
+        self.loaded_ui = QUiLoader().load(":ui/GenBBS_newprj.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
@@ -108,7 +109,7 @@ class Category1Screen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
-        self.loaded_ui = QUiLoader().load("assets/ui/GenBBS_catg1.ui")
+        self.loaded_ui = QUiLoader().load(":/ui/GenBBS_catg1.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
@@ -142,9 +143,12 @@ class Category1Screen(QWidget):
         self.btn_delete_item_catg1 = self.loaded_ui.findChild(QPushButton, "btnDeleteItemCatg1")
         self.btn_export_all_excel_catg1 = self.loaded_ui.findChild(QPushButton, "btnExportCatg1")
         self.btn_edit_name_catg1 = self.loaded_ui.findChild(QPushButton, "btnEditNameCatg1")
+        self.btn_help_reinf = self.loaded_ui.findChild(QPushButton, "btnHelpCatg1")
+            
 
         self.back_button.clicked.connect(self.prompt_save_project)
         self.save_button.clicked.connect(self.save_current_project)
+        self.btn_help_reinf.clicked.connect(self._open_help_dialog)
         self.btn_create_sub_catg1.clicked.connect(self.add_new_category)      
         print("Connecting signal")  
         self.btn_create_element_catg1.clicked.connect(self.add_new_element)
@@ -153,20 +157,23 @@ class Category1Screen(QWidget):
             self.btn_export_all_excel_catg1.clicked.connect(self.handle_export_all_bars)
         if self.btn_edit_name_catg1:
             self.btn_edit_name_catg1.clicked.connect(self._on_edit_name_button_clicked)
+    
+    def _open_help_dialog(self):
+        help_dialog = HelpScreen(self)
+        help_dialog.exec_()
+        
+
 
     def _remove_item_from_model(self, parent_item, item_to_remove):
-        if isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'children'):
+        if isinstance(parent_item, CategoryHigher):
             parent_item.children = [child for child in parent_item.children if child.id != item_to_remove.id]
             return True
-        elif isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'categories'):
+        elif isinstance(parent_item, Project):
             parent_item.categories = [child for child in parent_item.categories if child != item_to_remove]
             return True
-        elif isinstance(parent_item, (Project, CategoryHigher, CategoryLower)) and hasattr(parent_item, 'elements'):
+        elif isinstance(parent_item, CategoryLower):
             parent_item.elements = [child for child in parent_item.elements if child != item_to_remove]
             return True
-        print (hasattr(parent_item, 'children'))
-        print (isinstance(parent_item, (Project, CategoryHigher, CategoryLower)))
-        print(str(parent_item))
         return False
 
     def delete_selected_item(self):
@@ -193,7 +200,6 @@ class Category1Screen(QWidget):
             if self._remove_item_from_model(parent_object, selected_object):
                 parent_tree_item.removeChild(selected_tree_item)
                 self.app_window.project_modified = True
-                self._apply_settings()
                 # self.update_selected_item()
             else:
                 QMessageBox.warning(self, "Deletion Error", "Could not remove item from model.")
@@ -253,72 +259,43 @@ class Category1Screen(QWidget):
 
         if isinstance(selected_object, Project):
             # Disable element creation when Project is selected
-            print ("Is instance")
-            if self.input_new_element_catg1:
-                self.input_new_element_catg1.setEnabled(False)
-            if self.btn_create_element_catg1:
-                self.btn_create_element_catg1.setEnabled(False)
-            if self.inputElementQtCatg1:
-                self.inputElementQtCatg1.setEnabled(False)
-            if self.input_new_sub_catg1:
-                self.input_new_sub_catg1.setEnabled(True)
-            if self.btn_create_sub_catg1:
-                self.btn_create_sub_catg1.setEnabled(True)
-            if self.btn_delete_item_catg1:
-                self.btn_delete_item_catg1.setEnabled(False)
+            self.input_new_element_catg1.setEnabled(False)
+            self.btn_create_element_catg1.setEnabled(False)
+            self.inputElementQtCatg1.setEnabled(False)
+            self.input_new_sub_catg1.setEnabled(True)
+            self.btn_create_sub_catg1.setEnabled(True)
+            self.btn_delete_item_catg1.setEnabled(False)
         elif isinstance(selected_object, CategoryLower):
             # Disable category creation when CategoryLower is selected
-            if self.input_new_sub_catg1:
-                self.input_new_sub_catg1.setEnabled(False)
-            if self.btn_create_sub_catg1:
-                self.btn_create_sub_catg1.setEnabled(False)
-            if self.input_new_element_catg1:
-                self.input_new_element_catg1.setEnabled(True)
-            if self.btn_create_element_catg1:
-                self.btn_create_element_catg1.setEnabled(True)
-            if self.inputElementQtCatg1:
-                self.inputElementQtCatg1.setEnabled(True)
-            if self.btn_delete_item_catg1:
-                self.btn_delete_item_catg1.setEnabled(True)
-        if isinstance(selected_object, Element):
+            self.input_new_sub_catg1.setEnabled(False)
+            self.btn_create_sub_catg1.setEnabled(False)
+            self.input_new_element_catg1.setEnabled(True)
+            self.btn_create_element_catg1.setEnabled(True)
+            self.inputElementQtCatg1.setEnabled(True)
+            self.btn_delete_item_catg1.setEnabled(True)
+        elif isinstance(selected_object, Element):
             # Disable element creation when Project is selected
             print ("Is instance")
-            if self.input_new_element_catg1:
-                self.input_new_element_catg1.setEnabled(False)
-            if self.btn_create_element_catg1:
-                self.btn_create_element_catg1.setEnabled(False)
-            if self.inputElementQtCatg1:
-                self.inputElementQtCatg1.setEnabled(False)
-            if self.input_new_sub_catg1:
-                self.input_new_sub_catg1.setEnabled(False)
-            if self.btn_create_sub_catg1:
-                self.btn_create_sub_catg1.setEnabled(False)
-            if self.btn_delete_item_catg1:
-                self.btn_delete_item_catg1.setEnabled(True)
+            self.input_new_element_catg1.setEnabled(False)
+            self.btn_create_element_catg1.setEnabled(False)
+            self.inputElementQtCatg1.setEnabled(False)
+            self.input_new_sub_catg1.setEnabled(False)
+            self.btn_create_sub_catg1.setEnabled(False)
+            self.btn_delete_item_catg1.setEnabled(True)
         elif isinstance(selected_object, CategoryHigher):
             # Enable category creation for CategoryHigher
-            if self.input_new_sub_catg1:
-                self.input_new_sub_catg1.setEnabled(True)
-            if self.btn_create_sub_catg1:
-                self.btn_create_sub_catg1.setEnabled(True)
-            if self.btn_delete_item_catg1:
-                self.btn_delete_item_catg1.setEnabled(True)
-
+            self.input_new_sub_catg1.setEnabled(True)
+            self.btn_create_sub_catg1.setEnabled(True)
+            self.btn_delete_item_catg1.setEnabled(True)
             # Enable element creation for CategoryHigher only if it has no children
             if selected_object.children:
-                if self.input_new_element_catg1:
-                    self.input_new_element_catg1.setEnabled(False)
-                if self.btn_create_element_catg1:
-                    self.btn_create_element_catg1.setEnabled(False)
-                if self.inputElementQtCatg1:
-                    self.inputElementQtCatg1.setEnabled(False)
+                self.input_new_element_catg1.setEnabled(False)
+                self.btn_create_element_catg1.setEnabled(False)
+                self.inputElementQtCatg1.setEnabled(False)
             else:
-                if self.input_new_element_catg1:
-                    self.input_new_element_catg1.setEnabled(True)
-                if self.btn_create_element_catg1:
-                    self.btn_create_element_catg1.setEnabled(True)
-                if self.inputElementQtCatg1:
-                    self.inputElementQtCatg1.setEnabled(True)
+                self.input_new_element_catg1.setEnabled(True)
+                self.btn_create_element_catg1.setEnabled(True)
+                self.inputElementQtCatg1.setEnabled(True)
 
     def add_new_category(self):
         category_name = self.input_new_sub_catg1.text().strip()
@@ -380,9 +357,21 @@ class Category1Screen(QWidget):
                 self, "Export Project Data to Excel", "project_data.xlsx", "Excel Files (*.xlsx)"
             )
             if file_name:
-                ExcelExporter.export_project_bars_to_excel(self.app_window.current_project, file_name)
-        else:
-            QMessageBox.warning(self, "Export Error", "No project loaded to export.")
+                splash_screen = ExportSplashScreen(self) # Pass self as parent
+                splash_screen.show()
+                QApplication.processEvents() # Update the UI to show the splash screen
+
+                try:
+                    excel_exporter = ExcelExporter()
+                    excel_exporter.progress_updated.connect(splash_screen.update_progress)
+                    excel_exporter.export_project_bars_to_excel(self.app_window.current_project, file_name)
+                    QMessageBox.information(self, "Export Successful", "Project data exported to Excel successfully.")
+                except Exception as e:
+                    QMessageBox.critical(self, "Export Error", f"An error occurred during export: {e}")
+                finally:
+                    splash_screen.close() # Ensure splash screen is closed
+            else:
+                QMessageBox.warning(self, "Export Cancelled", "Export operation cancelled.")
 
     def add_new_element(self):
         element_name = self.input_new_element_catg1.text().strip()
@@ -455,11 +444,14 @@ class Category1Screen(QWidget):
             for obj in obj_list:
                 tree_item = QTreeWidgetItem(parent_item, [obj.name])
                 tree_item.setData(0, Qt.UserRole, obj)  # Store the actual object
-                if hasattr(obj, 'children') and obj.children:
-                    print("Inside")
-                    _add_items(tree_item, obj.children)
-                if hasattr(obj, 'elements') and obj.elements:
-                    _add_items(tree_item, obj.elements)
+                if type(obj).__name__ not in ['Bar', 'Element'] :
+                    _add_items(tree_item, obj.get_children())
+
+                # if hasattr(obj, 'children') and obj.children:
+                #     print("Inside")
+                #     _add_items(tree_item, obj.children)
+                # if hasattr(obj, 'elements') and obj.elements:
+                #     _add_items(tree_item, obj.elements)
         self.tree_widget.clear()
 
         project_item = QTreeWidgetItem(self.tree_widget, [self.app_window.current_project.name])
@@ -586,7 +578,7 @@ class ElementManagementScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
-        loaded_ui = QUiLoader().load("assets/ui/GenBBS_element.ui")
+        loaded_ui = QUiLoader().load(":/ui/GenBBS_element.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(loaded_ui)
         self.setLayout(layout)
@@ -596,7 +588,7 @@ class ReinforcementScreen(QWidget):
         super().__init__(parent)
         self.app_window = parent # Store reference to ApplicationWindow
         self.settings_manager = settings_manager
-        self.loaded_ui = QUiLoader().load("assets/ui/GenBBS_reinf.ui")
+        self.loaded_ui = QUiLoader().load(":/ui/GenBBS_reinf.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
         self.setLayout(layout)
@@ -616,6 +608,12 @@ class ReinforcementScreen(QWidget):
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             if self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett") == "true":
                 self.btn_next_reinf.click()
+                event.accept()
+            else:
+                super().keyPressEvent(event)
+        elif event.key() == Qt.Key_Delete:
+            if self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett") == "true":
+                self.btn_delete_item_catg1.click()
                 event.accept()
             else:
                 super().keyPressEvent(event)
@@ -688,6 +686,8 @@ class ReinforcementScreen(QWidget):
         is_autofill_enabled= map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")]
         is_autogen_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")]   
         is_allowkey_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")]  
+        is_disablecreate_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett")]
+        # is_warnings_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett")]  
 
         no_of_bars = self.settings_manager.get_setting("reinforcement/noOfBarsSett")
         if is_autofill_enabled == True: 
@@ -793,7 +793,7 @@ class ReinforcementScreen(QWidget):
                     item.setText(bar.shape_code) # Revert to original value
             elif col == 2:  # Diameter
                 # Assuming diameter is stored as a string like "Y10", extract the number
-                diameter_str = new_value.lstrip('Yy')
+                diameter_str = new_value.lstrip('YyRrHh')
                 if diameter_str.isdigit() and int(diameter_str) in MIN_BEND_RADII:
                     bar.diameter = new_value # Store as "YXX"
                     updated = True
@@ -883,13 +883,17 @@ class ReinforcementScreen(QWidget):
         bar_sizes = sorted(list(MIN_BEND_RADII.keys()))
         for size in bar_sizes:
             self.input_bar_size_reinf.addItem(f"Y{size}")
+        for size in bar_sizes:
+            self.input_bar_size_reinf.addItem(f"R{size}")
+        for size in bar_sizes:
+            self.input_bar_size_reinf.addItem(f"H{size}")
 
         # Populate Shape Code ComboBox
         self.shape_code_reinf.clear()
         # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
         shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
         
-        image_base_path = "assets/images/"
+        image_base_path = ":/images/"
         for code in shape_codes:
             image_path = f"{image_base_path}{code}.jpg"
             pixmap = QPixmap(image_path)
@@ -946,8 +950,9 @@ class ReinforcementScreen(QWidget):
 
     def create_bar_from_inputs(self):
         print("Create Bar button clicked!")
-        # Retrieve values from UI elements
+        self._reset_dimension_input_styles() # Reset styles at the beginning
 
+        # Retrieve values from UI elements
         bar_size_text = self.input_bar_size_reinf.currentText()
         shape_code = self.shape_code_reinf.currentText()
         bar_mark_text = self.input_bar_mark.text()
@@ -993,6 +998,33 @@ class ReinforcementScreen(QWidget):
             QMessageBox.warning(self, "Input Error", "Please select both Bar Size and Shape Code.")
             return
 
+        # Perform BS 8666:2020 validation
+        enable_warning = self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett") == "true"
+        is_valid, validation_warnings, aff_dims = validate_bar_dimensions(dimensions, shape_code, bar_size_text)
+
+        if validation_warnings and enable_warning:
+            warning_message = "\n".join(validation_warnings)
+            QMessageBox.warning(self, "Validation Warning", warning_message)
+
+            # Apply red border to non-conforming dimension input fields
+            dimension_input_fields = {
+                "A": self.a_dimension, "B": self.b_dimension, "C": self.c_dimension,
+                "D": self.d_dimension, "E": self.e_dimension, "F": self.f_dimension,
+                "R": self.r_dimension
+            }
+
+
+            # Check setting to prevent bar creation
+            disable_create = self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett") == "true"
+            if disable_create:
+                for dim_code, field in dimension_input_fields.items():
+                    if dim_code in aff_dims:
+                        field.setStyleSheet("border: 1px solid red;")
+                    else:
+                        field.setStyleSheet("")
+                QMessageBox.information(self, "Bar Not Created", "Bar creation prevented due to non-conforming dimensions.")
+                return
+
         selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
         if selected_rows: # Update existing bar
             row = selected_rows[0].row()
@@ -1009,6 +1041,7 @@ class ReinforcementScreen(QWidget):
                 self.clear_input_fields()
                 # self._apply_settings()
                 self.table_widget_reinf.clearSelection() # Clear selection after update
+                self._reset_dimension_input_styles()
                 QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
             else:
                 QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
@@ -1029,14 +1062,28 @@ class ReinforcementScreen(QWidget):
                 self.app_window.project_modified = True
                 self.populate_bars_table()
                 self.clear_input_fields() # Clear input fields after successful bar creation
+                print("\n\nJust cleared\n\n")
+                self._reset_dimension_input_styles()
                 # self._apply_settings()
                 # QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
             else:
                 QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
-
+                return
+        self._reset_dimension_input_styles()
         # Placeholder for UI update logic
         pass
 
+    def _reset_dimension_input_styles(self):
+        dimension_fields = [
+            self.a_dimension, self.b_dimension, self.c_dimension,
+            self.d_dimension, self.e_dimension, self.f_dimension,
+            self.r_dimension
+        ]
+        for field in dimension_fields:
+            field.setStyleSheet("")       # clear any inline overrides
+            field.style().unpolish(field)
+            field.style().polish(field)
+            field.update()
 
     def populate_bars_table(self):
         self.table_widget_reinf.setRowCount(0) # Clear existing rows
@@ -1139,10 +1186,13 @@ class ReinforcementScreen(QWidget):
 class SettingsScreen(QDialog):
     def __init__(self, settings_manager, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.settings_manager = settings_manager
-        self.loaded_ui = QUiLoader().load("assets/ui/settings.ui")
+        self.loaded_ui = QUiLoader().load(":/ui/settings.ui")
         layout = QVBoxLayout(self)
         layout.addWidget(self.loaded_ui)
+        self.setWindowTitle("Settings")
+        self.setWindowIcon(QIcon(":/images/settings.png"))
         # self._load_ui()
         self._connect_ui_elements()
         self._connect_signals()
@@ -1157,6 +1207,8 @@ class SettingsScreen(QDialog):
         self.chBoxAutoFillSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoFillSett")
         self.chBoxAutoGenSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoGenSett")
         self.chBoxAllowKeySett = self.loaded_ui.findChild(QCheckBox, "chBoxAllowKeySett")
+        self.chBoxDisableCreateSett = self.loaded_ui.findChild(QCheckBox, "chBoxDisableCreateSett")
+        self.chBoxEnableWarningSett = self.loaded_ui.findChild(QCheckBox, "chBoxEnableWarningSett")
         # Line Edits
         self.noOfBarsSett = self.loaded_ui.findChild(QLineEdit, "noOfBarsSett")
         self.aSett = self.loaded_ui.findChild(QLineEdit, "aSett")
@@ -1189,7 +1241,7 @@ class SettingsScreen(QDialog):
         # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
         shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
         
-        image_base_path = "assets/images/"
+        image_base_path = ":/images/"
         self.shapeCodeSett.addItem("")
         for code in shape_codes:
             image_path = f"{image_base_path}{code}.jpg"
@@ -1212,7 +1264,9 @@ class SettingsScreen(QDialog):
         map_bool = {"true": True, "false": False}
         self.chBoxAutoFillSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")])
         self.chBoxAutoGenSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")])    
-        self.chBoxAllowKeySett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")])   
+        self.chBoxAllowKeySett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")])
+        self.chBoxDisableCreateSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett")])
+        self.chBoxEnableWarningSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett")])   
 
         self.noOfBarsSett.setText(str(self.settings_manager.get_setting("reinforcement/noOfBarsSett")))
         self.aSett.setText(str(self.settings_manager.get_setting("reinforcement/aSett")))
@@ -1234,6 +1288,8 @@ class SettingsScreen(QDialog):
         print(self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett"))
         self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
         self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxDisableCreateSett", self.chBoxDisableCreateSett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxEnableWarningSett", self.chBoxEnableWarningSett.isChecked())
         def safe_int(text):
             if text.strip() == "":
                 return None
@@ -1335,6 +1391,7 @@ class SettingsScreen(QDialog):
         print("\n")
         self.accept() # QDialog.accept() closes the dialog and returns QDialog.Accepted
 
+
     def _update_autofill_states(self):
         is_autofill_enabled = self.chBoxAutoFillSett.isChecked()
         # if not is_autofill_enabled:
@@ -1372,6 +1429,8 @@ class SettingsManager:
             "reinforcement/chBoxAutoFillSett": False,
             "reinforcement/chBoxAutoGenSett": False,
             "reinforcement/chBoxAllowKeySett": False,
+            "reinforcement/chBoxDisableCreateSett": False,
+            "reinforcement/chBoxEnableWarningSett": False,
             "reinforcement/aSett": "",
             "reinforcement/bSett": "",
             "reinforcement/cSett": "",
@@ -1400,16 +1459,48 @@ class SettingsManager:
 
     def save_settings(self):
         self.settings.sync()
-        # Optional: force immediate write if needed for critical settings
+        # Optional: force immediate write if needed for critical settings\
+
+class HelpScreen(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.loaded_ui = QUiLoader().load(":/ui/help.ui")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.loaded_ui)
+        self.setWindowTitle("Help")
+        self.setWindowIcon(QIcon(":/images/help.png"))
+
+class ExportSplashScreen(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Exporting")
+        self.setFixedSize(300, 150) # Increased height to accommodate progress bar
+        self.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
+        
+        layout = QVBoxLayout(self)
+        label = QLabel("Exporting data, please wait...", self)
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+
+        self.setLayout(layout)
+
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
 
 # --- Main Application Window ---
 class ApplicationWindow(QMainWindow):
     def __init__(self, splash_screen: QSplashScreen):
         super().__init__()
         self.splash_screen = splash_screen
-        self.base_title = "GenBBS Application"
+        self.base_title = "GenBBS"
         self.setWindowTitle(self.base_title)
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(0, 0, 400, 400)
 
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
@@ -1421,6 +1512,10 @@ class ApplicationWindow(QMainWindow):
 
         self.setup_screens()
         self.splash_screen.finish(self)
+        self.setWindowIcon(QIcon(":/images/GenBBS Logo.png"))
+        print("\n\n\nSize hint:", self.sizeHint(), "\n\n\n")
+        self.setMinimumSize(750, 700)
+
 
     def update_window_title(self, project_name: str = None):
         if project_name:
@@ -1490,10 +1585,11 @@ class ApplicationWindow(QMainWindow):
 # --- Application Entry Point ---
 if __name__ == "__main__":
     app = QApplication([])
+    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
     # Create a QPixmap from GenBBS_loading.ui for the QSplashScreen
     temp_loader = QUiLoader()
-    temp_loading_widget = temp_loader.load("assets/ui/GenBBS_loading.ui")
+    temp_loading_widget = temp_loader.load(":/ui/GenBBS_loading.ui")
     if temp_loading_widget:
         temp_loading_widget.setAttribute(Qt.WA_DontShowOnScreen)
         temp_loading_widget.resize(800, 600)
@@ -1517,6 +1613,7 @@ if __name__ == "__main__":
     # Create and show the main application window
     main_application_window = ApplicationWindow(splash_screen)
     main_application_window.show()
+    
 
     app.exec()
 

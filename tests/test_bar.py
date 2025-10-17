@@ -1,6 +1,6 @@
 import pytest
 from src.logic.data_models import Bar
-from src.config import MIN_BEND_RADII
+from src.config.config import MIN_BEND_RADII
 
 # Test cases for _get_bend_radius method
 @pytest.mark.parametrize(

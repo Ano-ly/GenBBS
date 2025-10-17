@@ -74,7 +74,7 @@
       <property name="frameShadow">
        <enum>QFrame::Shadow::Sunken</enum>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="3,0">
        <item>
         <widget class="QFrame" name="frame3Reinf">
          <property name="sizePolicy">
@@ -184,7 +184,7 @@ background-color: rgb(207, 207, 207);
          <property name="frameShadow">
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,15,1,0">
+         <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,15,1">
           <property name="spacing">
            <number>10</number>
           </property>
@@ -220,7 +220,7 @@ background-color: rgb(207, 207, 207);
                <string>Back</string>
               </property>
               <property name="icon">
-               <iconset resource="../app_resources.qrc">
+               <iconset>
                 <normaloff>:/images/Back_Button.jpg</normaloff>:/images/Back_Button.jpg</iconset>
               </property>
              </widget>
@@ -234,7 +234,7 @@ background-color: rgb(207, 207, 207);
                <string>Save</string>
               </property>
               <property name="icon">
-               <iconset resource="../app_resources.qrc">
+               <iconset>
                 <normaloff>:/images/Save button.png</normaloff>:/images/Save button.png</iconset>
               </property>
              </widget>
@@ -245,7 +245,7 @@ background-color: rgb(207, 207, 207);
                <string>Settings</string>
               </property>
               <property name="icon">
-               <iconset resource="../app_resources.qrc">
+               <iconset>
                 <normaloff>:/images/settings.png</normaloff>:/images/settings.png</iconset>
               </property>
              </widget>
@@ -292,26 +292,16 @@ color: black;
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignCenter</set>
               </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
            <widget class="QWidget" name="formReinf" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0,0,1,1,0,10,0,0">
-             <item>
-              <spacer name="vSpacer6_3">
-               <property name="orientation">
-                <enum>Qt::Orientation::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
+            <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0,1,1,0,10,0,0">
              <item>
               <layout class="QHBoxLayout" name="layout9reinf" stretch="1,1,0">
                <item>
@@ -511,7 +501,7 @@ color: black;
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>200</width>
+                   <width>150</width>
                    <height>25</height>
                   </size>
                  </property>
@@ -550,7 +540,7 @@ color: black;
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>100</width>
+                   <width>200</width>
                    <height>0</height>
                   </size>
                  </property>
@@ -582,7 +572,7 @@ color: black;
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
+                   <width>150</width>
                    <height>25</height>
                   </size>
                  </property>
@@ -661,8 +651,8 @@ color: black;
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>200</width>
-                   <height>55</height>
+                   <width>150</width>
+                   <height>50</height>
                   </size>
                  </property>
                  <property name="styleSheet">
@@ -708,6 +698,18 @@ color: black;
              </item>
              <item>
               <widget class="QWidget" name="formDimensionsReinf" native="true">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>120</height>
+                </size>
+               </property>
                <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,8,0">
                 <property name="spacing">
                  <number>5</number>
@@ -1515,7 +1517,7 @@ color: black;
                 <string/>
                </property>
                <property name="icon">
-                <iconset resource="../app_resources.qrc">
+                <iconset>
                  <normaloff>:/images/delete.png</normaloff>:/images/delete.png</iconset>
                </property>
                <property name="iconSize">
@@ -1565,22 +1567,6 @@ color: black;
             </property>
            </widget>
           </item>
-          <item>
-           <spacer name="vSpacer6_2">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Policy::Preferred</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </widget>
        </item>
@@ -1606,7 +1592,7 @@ color: black;
          <property name="frameShadow">
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,5,1,1,10">
+         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,5,1,1,10">
           <item>
            <widget class="QLabel" name="label2Reinf">
             <property name="font">
@@ -1619,6 +1605,16 @@ color: black;
             </property>
             <property name="text">
              <string>Shape</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
             </property>
            </widget>
           </item>

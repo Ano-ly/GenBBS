@@ -173,3 +173,42 @@ SHAPE_CODE_FORMULA_STRINGS = {
     "98": "A + 2B + C + D - 2r - 4d",
     "99": "Sum of all provided lengths"
 }
+
+#Value of minimum end dimension for bend >= 150
+P1 = {  6:110, 
+        8:115,
+        10:120,
+        12:125,
+        16:140,
+        20:190,
+        25:235,
+        32:305,
+        40:380,
+        50:475,
+    }
+#Value of minimum end dimension for bend < 150
+#Only P2 will be used in this application for better simplification.
+P2 = {  6:110, 
+        8:115,
+        10:130,
+        12:155,
+        16:210,
+        20:290,
+        25:365,
+        32:465,
+        40:580,
+        50:725,
+}
+#3d +2r approx to higher multiple of 5
+Q_HOOK_DIA = {
+        6:45, 
+        8:60,
+        10:70,
+        12:85,
+        16:115,
+        20:200,
+        25:250,
+        32:320,
+        40:400,
+        50:400, #Should be N/A accroding to BS 8666:2020
+}

@@ -1,4 +1,5 @@
 import math
+from src.config.config import Q_HOOK_DIA
 
 def calculate_cut_length_shape_00(lengths: dict, diameter: float, bend_radius: float) -> float:
     """
@@ -293,7 +294,8 @@ def calculate_cut_length_shape_47(lengths: dict, diameter: float, bend_radius: f
     A = lengths.get("A", 0)
     B = lengths.get("B", 0)
     C = lengths.get("C", 0)
-    return ((2 * A) + B + (2 * C) + (3 * bend_radius) - (6 * diameter)) / 1000.0
+    q = Q_HOOK_DIA.get(int(diameter), 0)
+    return ((2 * A) + B + (2 * C) + (2 * q) + (3 * bend_radius) - (6 * diameter)) / 1000.0
 
 def calculate_cut_length_shape_48(lengths: dict, diameter: float, bend_radius: float) -> float:
     """

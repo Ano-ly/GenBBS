@@ -122,6 +122,15 @@ padding-right: 5px;
 #btnSaveCatg1:hover {
 background-color:rgb(170, 170, 170)
 }
+#btnHelpCatg1 {
+border-radius: 5px;
+color: black;
+padding-left: 5px;
+padding-right: 5px;
+}
+#btnHelpCatg1:hover {
+background-color:rgb(170, 170, 170)
+}
 #btnBackCatg1 {
 
 border-radius: 5px;
@@ -184,7 +193,7 @@ border: 3px solid rgb(170, 0, 0);
            <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0">
             <item>
              <widget class="QPushButton" name="btnBackCatg1">
               <property name="sizePolicy">
@@ -231,6 +240,20 @@ border: 3px solid rgb(170, 0, 0);
               <property name="icon">
                <iconset resource="../app_resources.qrc">
                 <normaloff>:/images/Save button.png</normaloff>:/images/Save button.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnHelpCatg1">
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Help</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../app_resources.qrc">
+                <normaloff>:/images/help.png</normaloff>:/images/help.png</iconset>
               </property>
              </widget>
             </item>
@@ -1749,7 +1772,6 @@ color: white;
 	background-color: rgb(170, 0, 0);
 	border-radius: 3px;
 	color: white;
-	margin-right: 5pt;
 }
 QPushButton:hover {
 	background-color: rgb(181, 78, 78);
@@ -1765,7 +1787,7 @@ QPushButton:hover {
          <property name="frameShadow">
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,0,25,0">
+         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,0,25,4">
           <item>
            <widget class="QLabel" name="label2Catg1">
             <property name="font">
@@ -1802,10 +1824,31 @@ QPushButton:hover {
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
               <widget class="QTreeWidget" name="treeWidgetCatg1">
+               <property name="layoutDirection">
+                <enum>Qt::LayoutDirection::LeftToRight</enum>
+               </property>
+               <property name="verticalScrollBarPolicy">
+                <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+               </property>
+               <property name="horizontalScrollBarPolicy">
+                <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+               </property>
                <property name="tabKeyNavigation">
                 <bool>true</bool>
                </property>
                <property name="alternatingRowColors">
+                <bool>true</bool>
+               </property>
+               <property name="textElideMode">
+                <enum>Qt::TextElideMode::ElideLeft</enum>
+               </property>
+               <property name="horizontalScrollMode">
+                <enum>QAbstractItemView::ScrollMode::ScrollPerItem</enum>
+               </property>
+               <property name="updateThreshold">
+                <number>500</number>
+               </property>
+               <property name="animated">
                 <bool>true</bool>
                </property>
                <property name="columnCount">
@@ -1813,7 +1856,7 @@ QPushButton:hover {
                </property>
                <column>
                 <property name="text">
-                 <string notr="true">1</string>
+                 <string notr="true"/>
                 </property>
                </column>
               </widget>
@@ -1822,41 +1865,89 @@ QPushButton:hover {
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="btnExportCatg1">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <widget class="QFrame" name="frame">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
             </property>
-            <property name="minimumSize">
-             <size>
-              <width>70</width>
-              <height>30</height>
-             </size>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Segoe UI</family>
-              <pointsize>12</pointsize>
-              <strikeout>false</strikeout>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string>Export</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="0,0">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="btnExportCatg1">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>90</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>90</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <family>Segoe UI</family>
+                 <pointsize>12</pointsize>
+                 <bold>true</bold>
+                 <strikeout>false</strikeout>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
+               <property name="text">
+                <string>Export  </string>
+               </property>
+               <property name="icon">
+                <iconset resource="../app_resources.qrc">
+                 <normaloff>:/images/export.jpg</normaloff>:/images/export.jpg</iconset>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Policy::Expanding</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>

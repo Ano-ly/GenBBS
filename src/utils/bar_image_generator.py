@@ -110,8 +110,8 @@ def generate_bar_image(shape_code, dimensions, bar_id, output_dir):
         draw_segment(80, 10, 190, 10, f"E:{int(dimensions.get('E', ''))}")
         draw_segment(190, 10, 240, 50, "")
         draw_segment(80, 10, 30, 50, "")
-        ax.text(50, 33, f"A:{int(dimensions.get('A', ''))}", ha='center', fontsize=23, color='blue', rotation=-40)
-        ax.text(220, 33, f"B:{int(dimensions.get('B', ''))}", ha='center', fontsize=23, color='blue', rotation=40)
+        ax.text(55, 30, f"A:{int(dimensions.get('A', ''))}", ha='center', fontsize=23, color='blue', rotation=-40)
+        ax.text(215, 30, f"B:{int(dimensions.get('B', ''))}", ha='center', fontsize=23, color='blue', rotation=40)
     elif shape_code == "26":
         draw_segment(10, 10, 60, 10, f"A:{int(dimensions.get('A', ''))}")
         draw_segment(60, 10, 100, 70, "")
@@ -365,8 +365,8 @@ def generate_bar_image(shape_code, dimensions, bar_id, output_dir):
         draw_segment(210, 40, 210, 20, "", 'blue', 2)
         draw_segment(205, 80, 215, 80, "", 'blue', 2)
         draw_segment(205, 20, 215, 20, "", 'blue', 2)
-        ax.text(200, 45, f"A:{int(dimensions.get('A', ''))}", ha='center', fontsize=23, color='blue')
-        ax.text(115, 5, f"B:{int(dimensions.get('B', ''))}", ha='center', fontsize=23, color='blue')
+        ax.text(205, 45, f"A:{int(dimensions.get('A', ''))}", ha='center', fontsize=23, color='blue')
+        ax.text(120, 5, f"B:{int(dimensions.get('B', ''))}", ha='center', fontsize=23, color='blue')
     elif shape_code == "77":
         ax.add_patch(Arc((100, 50), 60, 60, theta1=0, theta2=360, color='black', linewidth=4))
         ax.add_patch(Arc((100, 40), 40, 40, theta1=210, theta2=330, color='black', linewidth=4))
@@ -388,10 +388,6 @@ def generate_bar_image(shape_code, dimensions, bar_id, output_dir):
         draw_segment(150, 70, 150, 40, "")
         ax.text(140, 30, f"B:{int(dimensions.get('B', ''))}", ha='center', fontsize=23, color='blue', rotation=90)
         draw_segment(150, 40, 180, 40, f"D:{int(dimensions.get('D', ''))}")
-
-
-    
-
     else:
         # Generic placeholder shape for unsupported codes
         ax.text(50, 30, f"Shape {shape_code}\n(Not defined yet)", 

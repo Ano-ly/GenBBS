@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/export.jpg</file>
+    <file>images/categoryhighericon.png</file>
+    <file>images/categorylowericon.jpg</file>
+    <file>images/help.png</file>
     <file>images/settings.png</file>
     <file>images/edit.png</file>
     <file>images/Save button.png</file>
@@ -14,6 +18,9 @@
     <file>ui/GenBBS_element.ui</file>
     <file>ui/GenBBS_loading.ui</file>
     <file>ui/GenBBS_newprj.ui</file>
+    <file>ui/help.ui</file>
+    <file>ui/settings.ui</file>
+    <file>ui/GenBBS_reinf.ui</file>
     <file>images/delete.png</file>
     <file>images/00.jpg</file>
     <file>images/01.jpg</file>
@@ -51,7 +58,6 @@
     <file>images/75.jpg</file>
     <file>images/98.jpg</file>
     <file>images/77.jpg</file>
-    <file>ui/GenBBS_reinf.ui</file>
   </qresource>
   <qresource prefix="newPrefix"/>
   <qresource/>

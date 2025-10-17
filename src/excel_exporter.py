@@ -5,16 +5,22 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtCore import QObject, Signal
 from typing import List, Dict, Any, Union
 import math
 from src.utils.bar_image_generator import generate_bar_image
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
 from openpyxl.utils import get_column_letter
 import os
 
-class ExcelExporter:
-    @staticmethod
-    def _collect_element_quantities(current_item: Union[Project, CategoryHigher, CategoryLower, Element], element_quantities: Dict[str, int]):
+class ExcelExporter(QObject):
+    progress_updated = Signal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def _collect_element_quantities(self, current_item: Union[Project, CategoryHigher, CategoryLower, Element], element_quantities: Dict[str, int]):
         if isinstance(current_item, Element):
             element_quantities[current_item.id] = current_item.quantity
 
@@ -27,8 +33,38 @@ class ExcelExporter:
             children_to_check.extend(current_item.elements)
 
         for child in children_to_check:
-            ExcelExporter._collect_element_quantities(child, element_quantities)
+            self._collect_element_quantities(child, element_quantities)
+    @staticmethod
+    def insert_image(ws, img, cell, x_offset=0, y_offset=0):
+        """
+        Insert an image at a specific cell with optional pixel offsets.
+        
+        Args:
+            ws: Worksheet object
+            image_path (str): Path to the image file
+            cell (str): Target cell (e.g., "B2")
+            x_offset (int): Horizontal offset in pixels
+            y_offset (int): Vertical offset in pixels
+        """
+        # Convert pixels to EMUs (Excel's internal units)
+        EMU_per_pixel = 9525
+        x_off = x_offset * EMU_per_pixel
+        y_off = y_offset * EMU_per_pixel
 
+        # Get cell row and column (0-indexed)
+        cell_obj = ws[cell]
+        col = cell_obj.column - 1
+        row = cell_obj.row - 1
+
+        # Define anchor with offset
+        marker = AnchorMarker(col=col, colOff=x_off, row=row, rowOff=y_off)
+        anchor = OneCellAnchor(_from=marker, ext=img._data.ext, pic=img._data)
+
+        # Attach image to worksheet drawing
+        ws._images.append(img)
+        if ws._drawing is None:
+            ws._drawing = ws._parent.create_drawing()
+        ws._drawing.oneCellAnchors.append(anchor)
     @staticmethod
     def _compute_adjusted_bar_properties(element_quantities: Dict[str, int], bar_dict: Dict[str, Any]) -> Dict[str, Any]:
         bar = Bar.from_dict(bar_dict)
@@ -54,8 +90,7 @@ class ExcelExporter:
         bar_dict["total_weight"] = total_weight_adjusted
         return bar_dict
 
-    @staticmethod
-    def _collect_hierarchical_data_recursive(item: Union[Project, CategoryHigher, CategoryLower, Element, Bar],
+    def _collect_hierarchical_data_recursive(self, item: Union[Project, CategoryHigher, CategoryLower, Element, Bar],
                                             level: int,
                                             parent_path: List[str],
                                             hierarchical_rows: List[Dict[str, Any]], 
@@ -76,50 +111,43 @@ class ExcelExporter:
             row_data["Quantity"] = item.quantity
 
         if isinstance(item, Bar):
-            row_data.update(ExcelExporter._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
+            row_data.update(self._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
             image_path = generate_bar_image(item.shape_code, item.lengths, item.bar_id, r"C:\Users\Amy-Jay\Desktop\programming\GenBBS\src\temp_bar_images")
             # image_path = generate_bar_image("00", {'A':1000}, 3, "fff")
             row_data["image_path"] = image_path
 
         hierarchical_rows.append(row_data)
 
-        if isinstance(item, Project):
-            for category in item.categories:
-                ExcelExporter._collect_hierarchical_data_recursive(category, level + 1, current_path, hierarchical_rows, element_quantities)
-        elif isinstance(item, CategoryHigher):
-            for child in item.children:
-                ExcelExporter._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities)
-        elif isinstance(item, CategoryLower):
-            for element in item.elements:
-                ExcelExporter._collect_hierarchical_data_recursive(element, level + 1, current_path, hierarchical_rows, element_quantities) 
-        elif isinstance(item, Element):
-            btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths"}
+       
+        if isinstance(item, Element):
+            btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
             hierarchical_rows.append(btw_headers)
-            for bar in item.bars:
-                ExcelExporter._collect_hierarchical_data_recursive(bar, level + 1, current_path, hierarchical_rows, element_quantities)
+         
+        if not isinstance(item, Bar):
+            for child in item.get_children():
+                self._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities)
 
-    @staticmethod
-    def export_project_bars_to_excel(project: Project, file_path: str):
+    def export_project_bars_to_excel(self, project: Project, file_path: str):
+        self.progress_updated.emit(0)
         if not project:
             QMessageBox.warning(None, "Export Error", "No project loaded to export.")
             return
 
         element_quantities = {}
-        ExcelExporter._collect_element_quantities(project, element_quantities)
+        self._collect_element_quantities(project, element_quantities)
+        self.progress_updated.emit(10)
 
         hierarchical_rows = []
-        ExcelExporter._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows, element_quantities)
+        self._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows, element_quantities)
+        self.progress_updated.emit(30)
 
-        # Determine all possible column headers
-        # all_headers = set()
-        # for row in hierarchical_rows:
-        #     all_headers.update(row.keys())
-        ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "image_path", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths"]
+        ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths", "image_path", "Shape"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
 
         try:
             with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
                 df.to_excel(writer, sheet_name='Project Data', index=False)
+                self.progress_updated.emit(50)
                 workbook = writer.book
                 worksheet = writer.sheets['Project Data']
 
@@ -140,9 +168,9 @@ class ExcelExporter:
                 header_row = next (worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
                 col_map = {name: idx for idx, name in enumerate(header_row)}
                 #Headers of columns to be deleted
-                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name", "unit_weight","Quantity"]
+                target_headers = ["Type", "Level", "Path", "bar_id", "parent_tree", "Name", "unit_weight","Quantity", "image_path", "lengths", "shape_code"]
                 #Current cell headers and their corresponding proper cell headers for Bar Bending Schedule
-                proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "shape_code": "Shape Code", "number_of_bars":"No. in Each", "total_no_of_bars" : "Total No. of Bars" ,"total_length" : "Total Length", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size", "lengths": "Lengths"}
+                proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "number_of_bars":"No. in Each", "total_no_of_bars" : "Total No. of Bars" ,"total_length" : "Total Length", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size", "lengths": "Lengths"}
                 list_of_names = dict()
                 list_of_quantities = dict()
                 max_widths_of_columns = dict()
@@ -159,7 +187,7 @@ class ExcelExporter:
                             cell.font = header_font
                             cell.border = thin_border                       
                     #Height formatting
-                    worksheet.row_dimensions[row_index].height = 60               
+                    worksheet.row_dimensions[row_index].height = 64               
                     #color, font and alignment formatting
                     center_align = Alignment(horizontal="center", vertical="center")
                     left_align = Alignment(horizontal="left", vertical="center")
@@ -205,13 +233,19 @@ class ExcelExporter:
                             img = Image(image_path)
                             # Adjust image size if necessary
                             img.width = 300 # Example width
-                            img.height = 82 # Example height
+                            img.height = 84 # Example height
                             #Add image to relevant column
                             img_col_idx = col_map.get("image_path")
+                            print(f"\n{img_col_idx}")
                             if img_col_idx is not None:
-                                cell = row[img_col_idx]
+                                cell = row[7]
                                 anchor = cell.coordinate
+                                print(f"anchor: {anchor}")
+                                # worksheet.cell(row=row_index, column=img_col_idx).value = None
+                                cell.border = thin_border 
                                 worksheet.add_image(img, anchor)
+                                # ExcelExporter.insert_image(worksheet, img, anchor, x_offset=5, y_offset=2                                
+                                  
                             # os.remove(image_path)
                     # Set outline level for grouping
                     if row_index != header_row_idx:
@@ -265,12 +299,14 @@ class ExcelExporter:
                                 right_align = Alignment(horizontal="right", vertical="center")
                                 qt_cell.alignment = right_align
                                 worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])
-                
+                #Adjust width of column that stores the images of reinforcement bars
+                worksheet.column_dimensions[get_column_letter(8)].width = 45
                 #Remove initial header
                 # worksheet.delete_rows(1)
 
                 
-                QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
+                # QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
+            self.progress_updated.emit(100)
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")
 
