@@ -34,12 +34,16 @@ class MainMenuScreen(QWidget):
 
     def connect_buttons(self):
         new_project_button = self.loaded_ui.findChild(QPushButton, "crNewFile")
-        if new_project_button:
-            new_project_button.clicked.connect(self.app_window.go_to_new_project_screen)
+        new_project_button.clicked.connect(self.app_window.go_to_new_project_screen)
 
         existing_file_button = self.loaded_ui.findChild(QPushButton, "crExistingFile")
-        if existing_file_button:
-            existing_file_button.clicked.connect(self.open_file_dialog)
+        existing_file_button.clicked.connect(self.open_file_dialog)
+        self.btn_help_main = self.loaded_ui.findChild(QPushButton, "btnHelpMain")
+        self.btn_help_main.clicked.connect(self._open_help_dialog)
+
+    def _open_help_dialog(self):
+        help_dialog = HelpScreen(self)
+        help_dialog.exec_()
 
     def open_file_dialog(self):
         file_dialog = QFileDialog(self)
@@ -1511,7 +1515,7 @@ class ApplicationWindow(QMainWindow):
 
         self.setup_screens()
         self.splash_screen.finish(self)
-        self.setWindowIcon(QIcon(":/images/GenBBS Logo.png"))
+        self.setWindowIcon(QIcon(":/images/GenBBS Icon Logo.jpeg"))
         print("\n\n\nSize hint:", self.sizeHint(), "\n\n\n")
         self.setMinimumSize(750, 700)
 
@@ -1599,7 +1603,7 @@ if __name__ == "__main__":
     app.processEvents()
 
     # Simulate application initialization tasks
-    splash_screen.showMessage("Initializing application...", Qt.AlignBottom | Qt.AlignCenter, Qt.black)
+    splash_screen.showMessage("Initializing application...\nDeveloped By Amarachi Uvere", Qt.AlignBottom | Qt.AlignCenter, Qt.black)
     app.processEvents()
 
     # Create and show the main application window

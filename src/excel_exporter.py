@@ -314,7 +314,7 @@ class ExcelExporter(QObject):
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")
         finally:
-            # shutil.rmtree(self.temp_dir_for_img, ignore_errors=True)
-            pass
+            shutil.rmtree(self.temp_dir_for_img, ignore_errors=True)
+    
 
     
