@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, Q
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QIcon# Re-adding QPixmap and QPainter
-import resources
+import src.resources
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
@@ -365,7 +365,6 @@ class Category1Screen(QWidget):
                     excel_exporter = ExcelExporter()
                     excel_exporter.progress_updated.connect(splash_screen.update_progress)
                     excel_exporter.export_project_bars_to_excel(self.app_window.current_project, file_name)
-                    QMessageBox.information(self, "Export Successful", "Project data exported to Excel successfully.")
                 except Exception as e:
                     QMessageBox.critical(self, "Export Error", f"An error occurred during export: {e}")
                 finally:
@@ -1585,21 +1584,14 @@ class ApplicationWindow(QMainWindow):
 # --- Application Entry Point ---
 if __name__ == "__main__":
     app = QApplication([])
-    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
     # Create a QPixmap from GenBBS_loading.ui for the QSplashScreen
     temp_loader = QUiLoader()
     temp_loading_widget = temp_loader.load(":/ui/GenBBS_loading.ui")
-    if temp_loading_widget:
-        temp_loading_widget.setAttribute(Qt.WA_DontShowOnScreen)
-        temp_loading_widget.resize(800, 600)
-        pixmap = QPixmap(temp_loading_widget.size())
-        temp_loading_widget.render(pixmap)
-        del temp_loading_widget
-    else:
-        # Fallback if UI loading fails, use a default image or blank pixmap
-        pixmap = QPixmap(400, 300)
-        pixmap.fill(Qt.white)
+    temp_loading_widget.resize(800, 600)
+    pixmap = QPixmap(temp_loading_widget.size())
+    temp_loading_widget.render(pixmap)
+    del temp_loading_widget
 
     # Initialize and Show QSplashScreen
     splash_screen = QSplashScreen(pixmap)

@@ -1,8 +1,6 @@
 <RCC>
   <qresource prefix="/">
     <file>images/export.jpg</file>
-    <file>images/categoryhighericon.png</file>
-    <file>images/categorylowericon.jpg</file>
     <file>images/help.png</file>
     <file>images/settings.png</file>
     <file>images/edit.png</file>
@@ -14,8 +12,6 @@
     <file>images/Back_Button.jpg</file>
     <file>ui/GenBBS.ui</file>
     <file>ui/GenBBS_catg1.ui</file>
-    <file>ui/GenBBS_catg2.ui</file>
-    <file>ui/GenBBS_element.ui</file>
     <file>ui/GenBBS_loading.ui</file>
     <file>ui/GenBBS_newprj.ui</file>
     <file>ui/help.ui</file>

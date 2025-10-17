@@ -1,5 +1,7 @@
 import pandas as pd
 import openpyxl
+import tempfile
+import shutil
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
@@ -19,6 +21,7 @@ class ExcelExporter(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.temp_dir_for_img = tempfile.mkdtemp(prefix="genbbs_")
 
     def _collect_element_quantities(self, current_item: Union[Project, CategoryHigher, CategoryLower, Element], element_quantities: Dict[str, int]):
         if isinstance(current_item, Element):
@@ -112,7 +115,7 @@ class ExcelExporter(QObject):
 
         if isinstance(item, Bar):
             row_data.update(self._compute_adjusted_bar_properties(element_quantities, item.to_dict()))
-            image_path = generate_bar_image(item.shape_code, item.lengths, item.bar_id, r"C:\Users\Amy-Jay\Desktop\programming\GenBBS\src\temp_bar_images")
+            image_path = generate_bar_image(item.shape_code, item.lengths, item.bar_id, self.temp_dir_for_img)
             # image_path = generate_bar_image("00", {'A':1000}, 3, "fff")
             row_data["image_path"] = image_path
 
@@ -305,9 +308,13 @@ class ExcelExporter(QObject):
                 # worksheet.delete_rows(1)
 
                 
-                # QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
+                QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
             self.progress_updated.emit(100)
+            shutil.rmtree(self.temp_dir_for_img, ignore_errors=True)
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")
+        finally:
+            # shutil.rmtree(self.temp_dir_for_img, ignore_errors=True)
+            pass
 
     

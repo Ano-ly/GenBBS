@@ -295,7 +295,7 @@ def calculate_cut_length_shape_47(lengths: dict, diameter: float, bend_radius: f
     B = lengths.get("B", 0)
     C = lengths.get("C", 0)
     q = Q_HOOK_DIA.get(int(diameter), 0)
-    return ((2 * A) + B + (2 * C) + (2 * q) + (3 * bend_radius) - (6 * diameter)) / 1000.0
+    return ((2 * A) + B + (2 * C) + (2 * q) - (3 * bend_radius) - (6 * diameter)) / 1000.0
 
 def calculate_cut_length_shape_48(lengths: dict, diameter: float, bend_radius: float) -> float:
     """

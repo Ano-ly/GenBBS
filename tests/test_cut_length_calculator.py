@@ -219,7 +219,8 @@ class TestCutLengthCalculator:
         lengths = {"A": 500, "B": 100, "C": 500}
         diameter = 10
         bend_radius = 20
-        expected_cut_length = ((2 * 500) + 100 + (2 * 500) + (3 * 20) - (6 * 10)) / 1000.0 # (1000 + 100 + 1000 + 60 - 60) / 1000 = 2100 / 1000 = 2.1
+        # q = 70
+        expected_cut_length = ((2 * 500) + 100 + (2 * 500) + (2 * 70) - (3 * 20) - (6 * 10)) / 1000.0 # (1000 + 100 + 1000 + 60 - 60) / 1000 = 2100 / 1000 = 2.1
         assert calculate_cut_length_shape_47(lengths, diameter, bend_radius) == pytest.approx(expected_cut_length)
 
     def test_calculate_cut_length_shape_48(self):
