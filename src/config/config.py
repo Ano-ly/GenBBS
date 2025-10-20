@@ -133,3 +133,5 @@ Q_HOOK_DIA = {
         40:400,
         50:400, #Should be N/A accroding to BS 8666:2020
 }
+
+NO_OF_COLS_FOR_ITEMS = {"Project": 1, "CategoryHigher": 1, "CategoryLower": 1, "Element": 1, "Bar": 1}

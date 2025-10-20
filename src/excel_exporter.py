@@ -93,11 +93,30 @@ class ExcelExporter(QObject):
         bar_dict["total_weight"] = total_weight_adjusted
         return bar_dict
 
+    def compute_summaries(self, category: Union[Project, CategoryHigher, CategoryLower, Element], element_quantities) -> tuple[float, float]:
+        current_cut_length_sum = 0.0
+        current_total_weight_sum = 0.0
+        depth = 0
+
+        for child in category.get_children():
+            if type(child).__name__ == "Bar":
+                child_for_export = self._compute_adjusted_bar_properties(element_quantities, child.to_dict())
+                current_cut_length_sum += child_for_export["total_length"]
+                current_total_weight_sum += child_for_export["total_weight"]
+                print(f"\nCut Length: {current_cut_length_sum}, total_weight: {current_total_weight_sum}\n")
+            else:
+                # Recursively call and add the returned sums
+                child_cut_length, child_total_weight = self.compute_summaries(child, element_quantities)
+                current_cut_length_sum += child_cut_length
+                current_total_weight_sum += child_total_weight
+        
+        return {"cut_length_sum": str(current_cut_length_sum), "total_weight_sum": str(current_total_weight_sum)}
     def _collect_hierarchical_data_recursive(self, item: Union[Project, CategoryHigher, CategoryLower, Element, Bar],
                                             level: int,
                                             parent_path: List[str],
                                             hierarchical_rows: List[Dict[str, Any]], 
-                                            element_quantities: Dict[str, int]):
+                                            element_quantities: Dict[str, int],
+                                            summary_ids: [str]):
         item_type = type(item).__name__
         item_name = getattr(item, 'name', '') if hasattr(item, 'name') else ''
         current_path = parent_path + [item_name]
@@ -127,10 +146,19 @@ class ExcelExporter(QObject):
             hierarchical_rows.append(btw_headers)
          
         if not isinstance(item, Bar):
+            if item.id in summary_ids:
+                summaries_dict = self.compute_summaries(item, element_quantities)
+                cut_length_sum = summaries_dict["cut_length_sum"]
+                total_weight_sum = summaries_dict["total_weight_sum"]
+                btw_summary_name = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":f"{item.name.upper()} SUMMARY", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
+                # hierarchical_rows.append(btw_summary_name)
+                btw_summaries = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter": "TOTAL", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":str(cut_length_sum), "unit_weight":"unit_weight", "total_weight":str(total_weight_sum), "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
+                # hierarchical_rows.append(btw_summaries)
+                print(btw_summary_name, btw_summaries)
             for child in item.get_children():
-                self._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities)
+                self._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities, summary_ids)
 
-    def export_project_bars_to_excel(self, project: Project, file_path: str):
+    def export_project_bars_to_excel(self, project, file_path, summaries):
         self.progress_updated.emit(0)
         if not project:
             QMessageBox.warning(None, "Export Error", "No project loaded to export.")
@@ -140,8 +168,17 @@ class ExcelExporter(QObject):
         self._collect_element_quantities(project, element_quantities)
         self.progress_updated.emit(10)
 
+        summary_ids = []
+        for item in summaries:
+            summary_ids.append(item.id)
+
+        print(f"Summary ids: {summary_ids}")
+
         hierarchical_rows = []
-        self._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows, element_quantities)
+        self._collect_hierarchical_data_recursive(project, 0, [], hierarchical_rows, element_quantities, summary_ids)
+        print("\n\n")
+        print(hierarchical_rows)
+        print("\n\n")
         self.progress_updated.emit(30)
 
         ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths", "image_path", "Shape"]
@@ -298,7 +335,7 @@ class ExcelExporter(QObject):
                                 worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])
                             else:
                                 worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
-                                worksheet.cell(row=row_index, column=1, value=list_of_quantities[row_index])
+                                worksheet.cell(row=row_index, column=1, value=f"{list_of_quantities[row_index]} Nos")
                                 right_align = Alignment(horizontal="right", vertical="center")
                                 qt_cell.alignment = right_align
                                 worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])

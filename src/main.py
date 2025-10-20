@@ -213,7 +213,7 @@ class Category1Screen(QWidget):
     def setup_for_view(self):
         self.input_new_sub_catg1.clear()
         self.input_new_element_catg1.clear()
-        self.label1Catg1.setText("No Item Selected")
+        self.label1Catg1.setText("No Item Selected. Select an item in the right panel")
         self.inputElementQtCatg1.clear()
         print("setting up")
         self.populate_project_tree()
@@ -357,6 +357,10 @@ class Category1Screen(QWidget):
 
     def handle_export_all_bars(self):
         if self.app_window.current_project:
+            summaries_dialog = SummariesScreen(self, self.app_window)
+            if summaries_dialog.exec() != QDialog.Accepted:
+            # Settings were saved, re-apply them to the ReinforcementScreen
+                return
             file_name, _ = QFileDialog.getSaveFileName(
                 self, "Export Project Data to Excel", "project_data.xlsx", "Excel Files (*.xlsx)"
             )
@@ -368,7 +372,7 @@ class Category1Screen(QWidget):
                 try:
                     excel_exporter = ExcelExporter()
                     excel_exporter.progress_updated.connect(splash_screen.update_progress)
-                    excel_exporter.export_project_bars_to_excel(self.app_window.current_project, file_name)
+                    excel_exporter.export_project_bars_to_excel(self.app_window.current_project, file_name, summaries_dialog.get_summaries())
                 except Exception as e:
                     QMessageBox.critical(self, "Export Error", f"An error occurred during export: {e}")
                 finally:
@@ -672,28 +676,42 @@ class ReinforcementScreen(QWidget):
             self.btn_settings_reinf.clicked.connect(self._open_settings_dialog)
 
     def _open_settings_dialog(self):
+        # Capture the current state of all settings before opening the dialog
+        previous_state = {}
+        for key in self.settings_manager.settings.allKeys():
+            previous_state[key] = self.settings_manager.settings.value(key)
+
         settings_dialog = SettingsScreen(self.settings_manager, self)
         print("Settings before opening dialog: \n")
-        for key in self.settings_manager.settings.allKeys():
-            value = self.settings_manager.settings.value(key)
-            print(f"{key}: {value}")
+        for key in previous_state:
+            print(f"{key}: {previous_state[key]}")
         print("\n")
         settings_dialog._populate_ui_from_settings()
         if settings_dialog.exec() == QDialog.Accepted:
-            # Settings were saved, re-apply them to the ReinforcementScreen
-            self._apply_settings()
+            # Settings were saved, re-apply only the changed ones to the ReinforcementScreen
+            self._apply_settings(previous_state)
 
-    def _apply_settings(self):
-        # Retrieve settings
+    def _apply_settings(self, previous_state=None):
+        # Retrieve current settings
         map_bool = {"true": True, "false": False}
-        is_autofill_enabled= map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")]
-        is_autogen_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")]   
-        is_allowkey_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")]  
+        is_autofill_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")]
+        is_autogen_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett")]
+        is_allowkey_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett")]
         is_disablecreate_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett")]
-        # is_warnings_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett")]  
 
         no_of_bars = self.settings_manager.get_setting("reinforcement/noOfBarsSett")
-        if is_autofill_enabled == True: 
+
+        # If previous_state is provided, only apply settings that have changed
+        if previous_state is not None:
+            current_state = {key: self.settings_manager.settings.value(key) for key in self.settings_manager.settings.allKeys()}
+            changed_keys = [key for key in current_state if current_state[key] != previous_state.get(key)]
+        else:
+            changed_keys = None  # Apply all settings if no previous state
+
+        def setting_changed(key):
+            return changed_keys is None or key in changed_keys
+
+        if is_autofill_enabled:
             print("\n\n\n\n Autofill is enabledd!!!  \n\n")
             a_dim = self.settings_manager.get_setting("reinforcement/aSett")
             b_dim = self.settings_manager.get_setting("reinforcement/bSett")
@@ -704,30 +722,39 @@ class ReinforcementScreen(QWidget):
             r_dim = self.settings_manager.get_setting("reinforcement/rSett")
             bar_size = self.settings_manager.get_setting("reinforcement/barSizeSett")
             shape_code = self.settings_manager.get_setting("reinforcement/shapeCodeSett")
-        
 
-            # Apply settings to UI elements
-            self.input_no_of_bars.setText(str(no_of_bars))
-            self.a_dimension.setText(str(a_dim))
-            self.b_dimension.setText(str(b_dim))
-            self.c_dimension.setText(str(c_dim))
-            self.d_dimension.setText(str(d_dim))
-            self.e_dimension.setText(str(e_dim))
-            self.f_dimension.setText(str(f_dim))
-            self.r_dimension.setText(str(r_dim))
+            # Apply settings to UI elements only if they changed
+            if setting_changed("reinforcement/noOfBarsSett"):
+                self.input_no_of_bars.setText(str(no_of_bars))
+            if setting_changed("reinforcement/aSett"):
+                self.a_dimension.setText(str(a_dim))
+            if setting_changed("reinforcement/bSett"):
+                self.b_dimension.setText(str(b_dim))
+            if setting_changed("reinforcement/cSett"):
+                self.c_dimension.setText(str(c_dim))
+            if setting_changed("reinforcement/dSett"):
+                self.d_dimension.setText(str(d_dim))
+            if setting_changed("reinforcement/eSett"):
+                self.e_dimension.setText(str(e_dim))
+            if setting_changed("reinforcement/fSett"):
+                self.f_dimension.setText(str(f_dim))
+            if setting_changed("reinforcement/rSett"):
+                self.r_dimension.setText(str(r_dim))
 
             # Set current text for combo boxes, ensuring the value exists in the combo box
-            index = self.input_bar_size_reinf.findText(bar_size)
-            if bar_size == "":
-                self.input_bar_size_reinf.setCurrentText("")
-            if index != -1:
-                self.input_bar_size_reinf.setCurrentIndex(index)
-            
-            index = self.shape_code_reinf.findText(str(shape_code))
-            if shape_code == "":
-                self.shape_code_reinf.setCurrentText("")
-            if index != -1:
-                self.shape_code_reinf.setCurrentIndex(index)
+            if setting_changed("reinforcement/barSizeSett"):
+                index = self.input_bar_size_reinf.findText(bar_size)
+                if bar_size == "":
+                    self.input_bar_size_reinf.setCurrentText("")
+                if index != -1:
+                    self.input_bar_size_reinf.setCurrentIndex(index)
+
+            if setting_changed("reinforcement/shapeCodeSett"):
+                index = self.shape_code_reinf.findText(str(shape_code))
+                if shape_code == "":
+                    self.shape_code_reinf.setCurrentText("")
+                if index != -1:
+                    self.shape_code_reinf.setCurrentIndex(index)
 
         print(f"Auto-fill setting applied: {is_autofill_enabled}")
         print(f"Auto-generate setting applied: {is_autogen_enabled}")
@@ -1287,12 +1314,16 @@ class SettingsScreen(QDialog):
     def save_settings(self):
         # Checkboxes
         print(f"Is autofill checked? {self.chBoxAutoFillSett.isChecked()}")
-        self.settings_manager.set_setting("reinforcement/chBoxAutoFillSett", self.chBoxAutoFillSett.isChecked())
-        print(self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett"))
-        self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
-        self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
-        self.settings_manager.set_setting("reinforcement/chBoxDisableCreateSett", self.chBoxDisableCreateSett.isChecked())
-        self.settings_manager.set_setting("reinforcement/chBoxEnableWarningSett", self.chBoxEnableWarningSett.isChecked())
+        if self.chBoxAutoFillSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett"):
+            self.settings_manager.set_setting("reinforcement/chBoxAutoFillSett", self.chBoxAutoFillSett.isChecked())
+        if self.chBoxAutoGenSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett"):
+            self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
+        if self.chBoxAllowKeySett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett"):
+            self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
+        if self.chBoxDisableCreateSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett"):
+            self.settings_manager.set_setting("reinforcement/chBoxDisableCreateSett", self.chBoxDisableCreateSett.isChecked())
+        if self.chBoxEnableWarningSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett"):
+            self.settings_manager.set_setting("reinforcement/chBoxEnableWarningSett", self.chBoxEnableWarningSett.isChecked())
         def safe_int(text):
             if text.strip() == "":
                 return None
@@ -1367,7 +1398,8 @@ class SettingsScreen(QDialog):
                 bar_size = self.barSizeSett.currentText()
                 self.settings_manager.set_setting("reinforcement/barSizeSett", bar_size)
 
-                shape_code_text = safe_int(self.shapeCodeSett.currentText())
+                shape_code_text = self.shapeCodeSett.currentText()
+                print(f"\n\n\n\n\nShape code: text:{shape_code_text}\n\n\n\n\n")
                 if shape_code_text is not None:
                     self.settings_manager.set_setting("reinforcement/shapeCodeSett", shape_code_text)
                 else:
@@ -1473,6 +1505,65 @@ class HelpScreen(QDialog):
         layout.addWidget(self.loaded_ui)
         self.setWindowTitle("Help")
         self.setWindowIcon(QIcon(":/images/help.png"))
+
+class SummariesScreen(QDialog):
+    def __init__(self, parent=None, app_window=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.app_window = app_window
+        self.loaded_ui = QUiLoader().load(":/ui/summaries.ui")
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.loaded_ui)
+        self.setWindowTitle("Summaries")
+        self.setWindowIcon(QIcon(":/images/summaries.png"))
+        self._connect_ui_elements()
+        self.populate_project_tree()
+        self._summaries = []
+
+    def populate_project_tree(self):
+        #Recursive function to populate tree widget
+        def _add_items(parent_item, obj_list):
+            for obj in obj_list:
+                tree_item = QTreeWidgetItem(parent_item, [obj.name])
+                tree_item.setData(0, Qt.UserRole, obj)  # Store the actual object
+                if type(obj).__name__ not in ['Bar', 'Element'] :
+                    _add_items(tree_item, obj.get_children())
+
+                # if hasattr(obj, 'children') and obj.children:
+                #     print("Inside")
+                #     _add_items(tree_item, obj.children)
+                # if hasattr(obj, 'elements') and obj.elements:
+                #     _add_items(tree_item, obj.elements)
+        self.treeWidgetSum.clear()
+
+        project_item = QTreeWidgetItem(self.treeWidgetSum, [self.app_window.current_project.name])
+        project_item.setData(0, Qt.UserRole, self.app_window.current_project)  # Store the actual project object
+        _add_items(project_item, self.app_window.current_project.categories)
+        self.treeWidgetSum.expandAll()
+
+    def _connect_ui_elements(self):
+        self.treeWidgetSum = self.loaded_ui.findChild(QTreeWidget, "treeWidgetSum")
+        self.btnContinueSum = self.loaded_ui.findChild(QPushButton, "btnContinueSum")
+
+        self.btnContinueSum.clicked.connect(self.continue_export)
+
+    def continue_export(self):
+        selected_items = self.treeWidgetSum.selectedItems()
+        if selected_items:
+            selected_objects = []
+            for item in selected_items:
+                selected_object = item.data(0, Qt.UserRole)
+                selected_objects.append(selected_object)
+            self._summaries = selected_objects
+            print(self._summaries)
+        self.accept()
+
+    def get_summaries(self):
+        return self._summaries
+
+        
+
+
 
 class ExportSplashScreen(QDialog):
     def __init__(self, parent=None):

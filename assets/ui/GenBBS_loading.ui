@@ -22,12 +22,12 @@
    <iconset resource="../app_resources.qrc">
     <normaloff>:/images/GenBBS Logo.png</normaloff>:/images/GenBBS Logo.png</iconset>
   </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
-	background-image: url(:/images/Reinf_Dispersed_Backdrop.jpeg);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
+border-image: url(:/images/Reinf_Dispersed_Backdrop.jpeg) 0 0 0 0 stretch stretch;
 }</string>
   </property>
   <property name="iconSize">

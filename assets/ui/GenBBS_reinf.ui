@@ -276,15 +276,11 @@ background-color: rgb(207, 207, 207);
                 <bold>true</bold>
                </font>
               </property>
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
               <property name="styleSheet">
-               <string notr="true">
-	
-background-image: url(:/images/Reinf_Dispersed_Backdrop.jpeg);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-color: black;
-</string>
+               <string notr="true"/>
               </property>
               <property name="text">
                <string>i.e Ground Floor Beams</string>
@@ -1689,7 +1685,7 @@ color: black;
              <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
             </property>
             <property name="dragEnabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="dragDropOverwriteMode">
              <bool>false</bool>
@@ -1698,7 +1694,7 @@ color: black;
              <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
             </property>
             <property name="defaultDropAction">
-             <enum>Qt::DropAction::MoveAction</enum>
+             <enum>Qt::DropAction::IgnoreAction</enum>
             </property>
             <property name="selectionMode">
              <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
@@ -1707,7 +1703,7 @@ color: black;
              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
             </property>
             <property name="updateThreshold">
-             <number>700</number>
+             <number>1000</number>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>

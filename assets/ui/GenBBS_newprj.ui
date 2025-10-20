@@ -552,11 +552,7 @@ padding-left: 5px;
         <widget class="QFrame" name="frame2Newprj">
          <property name="styleSheet">
           <string notr="true">#frame2Newprj {
-	
-	background-image: url(:/images/Reinf_Backdrop.jpeg);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
+border-image: url(:/images/Reinf_Backdrop.jpeg) 0 0 0 0 stretch stretch;
 }</string>
          </property>
          <property name="frameShape">
@@ -579,6 +575,9 @@ padding-left: 5px;
               <width>150</width>
               <height>150</height>
              </size>
+            </property>
+            <property name="autoFillBackground">
+             <bool>true</bool>
             </property>
             <property name="text">
              <string/>
