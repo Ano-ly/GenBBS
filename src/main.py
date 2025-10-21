@@ -589,6 +589,13 @@ class ElementManagementScreen(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(loaded_ui)
         self.setLayout(layout)
+class NumericTableWidgetItem(QTableWidgetItem):
+    def __lt__(self, other):
+        try:
+            return int(self.text()) < int(other.text())
+        except ValueError:
+            # fallback to normal text sorting if not numbers
+            return self.text() < other.text()
 
 class ReinforcementScreen(QWidget):
     def __init__(self, parent=None, settings_manager=None):
@@ -691,6 +698,16 @@ class ReinforcementScreen(QWidget):
             # Settings were saved, re-apply only the changed ones to the ReinforcementScreen
             self._apply_settings(previous_state)
 
+    def setting_changed(self, key, previous_state):
+        if previous_state is not None:
+            current_state = {key: self.settings_manager.settings.value(key) for key in self.settings_manager.settings.allKeys()}
+            changed_keys = [key for key in current_state if current_state[key] != previous_state.get(key)]
+            print("\n\n\n\n")
+            print(changed_keys)
+            print("\n\n\n\n")
+        else:
+            changed_keys = None  # Apply all settings if no previous state
+        return changed_keys is None or key in changed_keys
     def _apply_settings(self, previous_state=None):
         # Retrieve current settings
         map_bool = {"true": True, "false": False}
@@ -702,54 +719,26 @@ class ReinforcementScreen(QWidget):
         no_of_bars = self.settings_manager.get_setting("reinforcement/noOfBarsSett")
 
         # If previous_state is provided, only apply settings that have changed
-        if previous_state is not None:
-            current_state = {key: self.settings_manager.settings.value(key) for key in self.settings_manager.settings.allKeys()}
-            changed_keys = [key for key in current_state if current_state[key] != previous_state.get(key)]
-        else:
-            changed_keys = None  # Apply all settings if no previous state
-
-        def setting_changed(key):
-            return changed_keys is None or key in changed_keys
-
+        
         if is_autofill_enabled:
             print("\n\n\n\n Autofill is enabledd!!!  \n\n")
-            a_dim = self.settings_manager.get_setting("reinforcement/aSett")
-            b_dim = self.settings_manager.get_setting("reinforcement/bSett")
-            c_dim = self.settings_manager.get_setting("reinforcement/cSett")
-            d_dim = self.settings_manager.get_setting("reinforcement/dSett")
-            e_dim = self.settings_manager.get_setting("reinforcement/eSett")
-            f_dim = self.settings_manager.get_setting("reinforcement/fSett")
-            r_dim = self.settings_manager.get_setting("reinforcement/rSett")
+            print("Innnnn 1")
+            self._apply_dim_settings(previous_state)
+
             bar_size = self.settings_manager.get_setting("reinforcement/barSizeSett")
             shape_code = self.settings_manager.get_setting("reinforcement/shapeCodeSett")
 
-            # Apply settings to UI elements only if they changed
-            if setting_changed("reinforcement/noOfBarsSett"):
+            # Apply settings to UI elements only if they changeed
+            if self.setting_changed("reinforcement/noOfBarsSett", previous_state):
                 self.input_no_of_bars.setText(str(no_of_bars))
-            if setting_changed("reinforcement/aSett"):
-                self.a_dimension.setText(str(a_dim))
-            if setting_changed("reinforcement/bSett"):
-                self.b_dimension.setText(str(b_dim))
-            if setting_changed("reinforcement/cSett"):
-                self.c_dimension.setText(str(c_dim))
-            if setting_changed("reinforcement/dSett"):
-                self.d_dimension.setText(str(d_dim))
-            if setting_changed("reinforcement/eSett"):
-                self.e_dimension.setText(str(e_dim))
-            if setting_changed("reinforcement/fSett"):
-                self.f_dimension.setText(str(f_dim))
-            if setting_changed("reinforcement/rSett"):
-                self.r_dimension.setText(str(r_dim))
-
             # Set current text for combo boxes, ensuring the value exists in the combo box
-            if setting_changed("reinforcement/barSizeSett"):
+            if self.setting_changed("reinforcement/barSizeSett", previous_state):
                 index = self.input_bar_size_reinf.findText(bar_size)
                 if bar_size == "":
                     self.input_bar_size_reinf.setCurrentText("")
                 if index != -1:
                     self.input_bar_size_reinf.setCurrentIndex(index)
-
-            if setting_changed("reinforcement/shapeCodeSett"):
+            if self.setting_changed("reinforcement/shapeCodeSett", previous_state):
                 index = self.shape_code_reinf.findText(str(shape_code))
                 if shape_code == "":
                     self.shape_code_reinf.setCurrentText("")
@@ -760,6 +749,39 @@ class ReinforcementScreen(QWidget):
         print(f"Auto-generate setting applied: {is_autogen_enabled}")
         print(f"Allow key setting applied: {is_allowkey_enabled}")
 
+    def _apply_dim_settings(self, previous_state=None):
+        map_bool = {"true": True, "false": False}
+        is_autofill_enabled = map_bool[self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett")]
+        if is_autofill_enabled:
+            print("\n\n\n\n Autofill is enabledd!!!  \n\n")
+            print("Innnnn 1")
+            selected_shape_code = self.shape_code_reinf.currentText()
+            if selected_shape_code in SHAPE_CODE_LENGTH_MAP.keys():
+                print("Innnnn 2")
+                if map_bool[self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}")]: 
+                    print("Innnnn 3")
+                    a_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/aSett")
+                    b_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/bSett")
+                    c_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/cSett")
+                    d_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/dSett")
+                    e_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/eSett")
+                    f_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/fSett")
+                    r_dim = self.settings_manager.get_setting(f"reinforcement/{selected_shape_code}/rSett")
+
+                    if self.setting_changed("reinforcement/{selected_shape_code}/aSett", previous_state):
+                        self.a_dimension.setText(str(a_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/bSett", previous_state):
+                        self.b_dimension.setText(str(b_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/cSett", previous_state):
+                        self.c_dimension.setText(str(c_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/dSett", previous_state):
+                        self.d_dimension.setText(str(d_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/eSett", previous_state):
+                        self.e_dimension.setText(str(e_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/fSett", previous_state):
+                        self.f_dimension.setText(str(f_dim))
+                    if self.setting_changed("reinforcement/{selected_shape_code}/rSett", previous_state):
+                        self.r_dimension.setText(str(r_dim))
     def _generate_next_bar_mark(self):
         if not self.element or not self.element.bars:
             return 1
@@ -972,6 +994,15 @@ class ReinforcementScreen(QWidget):
             else:
                 # input_field.clear() # Clear the field if it's disabled
                 input_field.setEnabled(False)
+                self.a_dimension.clear()
+
+        self.e_dimension.clear()
+        self.b_dimension.clear()
+        self.c_dimension.clear()
+        self.f_dimension.clear()
+        self.r_dimension.clear()
+        self.d_dimension.clear()
+        self._apply_dim_settings(previous_state=None)
 
     def update_formula_display(self):
         selected_shape_code = self.shape_code_reinf.currentText()
@@ -1124,10 +1155,10 @@ class ReinforcementScreen(QWidget):
         headers = ["Bar Mark", "Shape Code", "Diameter", "Lengths", "Number of Bars", "Cut Length", "Unit Weight", "Total Weight"]
         self.table_widget_reinf.setColumnCount(len(headers))
         self.table_widget_reinf.setHorizontalHeaderLabels(headers)
-
+        self.table_widget_reinf.setSortingEnabled(False)
         for row, bar in enumerate(self.element.bars):
             self.table_widget_reinf.insertRow(row)
-            self.table_widget_reinf.setItem(row, 0, QTableWidgetItem(str(bar.bar_mark)))
+            self.table_widget_reinf.setItem(row, 0, NumericTableWidgetItem(str(bar.bar_mark)))
             self.table_widget_reinf.setItem(row, 1, QTableWidgetItem(bar.shape_code))
             self.table_widget_reinf.setItem(row, 2, QTableWidgetItem(bar.diameter))
             self.table_widget_reinf.setItem(row, 3, QTableWidgetItem(str(bar.lengths)))
@@ -1135,7 +1166,8 @@ class ReinforcementScreen(QWidget):
             self.table_widget_reinf.setItem(row, 5, QTableWidgetItem(f"{bar.cut_length:.2f} mm"))
             self.table_widget_reinf.setItem(row, 6, QTableWidgetItem(f"{bar.unit_weight:.2f} kg/m"))
             self.table_widget_reinf.setItem(row, 7, QTableWidgetItem(f"{bar.total_weight:.2f} kg"))
-
+        self.table_widget_reinf.setSortingEnabled(True)
+        self.table_widget_reinf.sortItems(0, Qt.AscendingOrder)
         self.table_widget_reinf.resizeColumnsToContents()
 
     def set_element(self, element):
@@ -1233,6 +1265,7 @@ class SettingsScreen(QDialog):
         # Buttons
         self.btnSaveSett = self.loaded_ui.findChild(QPushButton, "btnSaveSett")
         self.btnCancelSett = self.loaded_ui.findChild(QPushButton, "btnCancelSett")
+        self.btnSaveDimsSett = self.loaded_ui.findChild(QPushButton, "btnSaveDimsSett")
         # Checkboxes
         self.chBoxAutoFillSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoFillSett")
         self.chBoxAutoGenSett = self.loaded_ui.findChild(QCheckBox, "chBoxAutoGenSett")
@@ -1251,13 +1284,18 @@ class SettingsScreen(QDialog):
         # ComboBoxes
         self.barSizeSett = self.loaded_ui.findChild(QComboBox, "barSizeSett")
         self.shapeCodeSett = self.loaded_ui.findChild(QComboBox, "shapeCodeSett")
+        self.shapeCodeDimSett = self.loaded_ui.findChild(QComboBox, "shapeCodeDimSett")
 
     def _connect_signals(self):
         # Connect buttons
         self.btnSaveSett.clicked.connect(self.save_settings)
         self.btnCancelSett.clicked.connect(self.reject) # QDialog.reject() closes the dialog
+        self.btnSaveDimsSett.clicked.connect(self.save_dim_settings)
         # Connect checkboxes
         self.chBoxAutoFillSett.stateChanged.connect(self._update_autofill_states)
+        #Connet combo boxes
+        self.shapeCodeDimSett.currentIndexChanged.connect(self.update_shape_dims)
+        
 
     def _populate_combo_boxes(self):
         self.barSizeSett.clear()
@@ -1268,11 +1306,13 @@ class SettingsScreen(QDialog):
             self.barSizeSett.addItem(f"Y{size}")
         # Populate Shape Code ComboBox
         self.shapeCodeSett.clear()
+        self.shapeCodeDimSett.clear()
         # Extract shape codes from SHAPE_CODE_LENGTH_MAP keys and sort them
         shape_codes = sorted(list(SHAPE_CODE_LENGTH_MAP.keys()))
         
         image_base_path = ":/images/"
         self.shapeCodeSett.addItem("")
+        self.shapeCodeDimSett.addItem("")
         for code in shape_codes:
             image_path = f"{image_base_path}{code}.jpg"
             pixmap = QPixmap(image_path)
@@ -1280,9 +1320,44 @@ class SettingsScreen(QDialog):
                 scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 icon = QIcon(scaled_pixmap)
                 self.shapeCodeSett.addItem(icon, code)
+                self.shapeCodeDimSett.addItem(icon, code)
             else:
                 self.shapeCodeSett.addItem(code) # Fallback if image not found
+                self.shapeCodeDimSett.addItem(code)
         
+    def update_shape_dims(self):
+        dimension_inputs = {
+            "A": self.aSett,
+            "B": self.bSett,
+            "C": self.cSett,
+            "D": self.dSett,
+            "E": self.eSett,
+            "F": self.fSett,
+            "R": self.rSett,
+        }
+        for dim in dimension_inputs.values():
+            dim.clear()
+        shape_code = self.shapeCodeDimSett.currentText()
+        required_dimensions = SHAPE_CODE_LENGTH_MAP.get(shape_code, [])
+
+        # List of all dimension input fields
+
+
+        for dim_code, input_field in dimension_inputs.items():
+            if dim_code in required_dimensions:
+                input_field.setEnabled(True)
+            else:
+                # input_field.clear() # Clear the field if it's disabled
+                input_field.setEnabled(False)
+        if self.settings_manager.get_setting(f"reinforcement/{shape_code}")== "true":
+            self.aSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/aSett")))
+            self.bSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/bSett")))
+            self.cSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/cSett")))
+            self.dSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/dSett")))
+            self.eSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/eSett")))
+            self.fSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/fSett")))
+            self.rSett.setText(str(self.settings_manager.get_setting(f"reinforcement/{shape_code}/rSett")))
+
 
     def _populate_ui_from_settings(self):
         # Checkboxes
@@ -1299,90 +1374,91 @@ class SettingsScreen(QDialog):
         self.chBoxEnableWarningSett.setChecked(map_bool[self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett")])   
 
         self.noOfBarsSett.setText(str(self.settings_manager.get_setting("reinforcement/noOfBarsSett")))
-        self.aSett.setText(str(self.settings_manager.get_setting("reinforcement/aSett")))
-        self.bSett.setText(str(self.settings_manager.get_setting("reinforcement/bSett")))
-        self.cSett.setText(str(self.settings_manager.get_setting("reinforcement/cSett")))
-        self.dSett.setText(str(self.settings_manager.get_setting("reinforcement/dSett")))
-        self.eSett.setText(str(self.settings_manager.get_setting("reinforcement/eSett")))
-        self.fSett.setText(str(self.settings_manager.get_setting("reinforcement/fSett")))
-        self.rSett.setText(str(self.settings_manager.get_setting("reinforcement/rSett")))
         # Assuming bar sizes are populated elsewhere or are static. For now, just set the current text.
         self.barSizeSett.setCurrentText(self.settings_manager.get_setting("reinforcement/barSizeSett"))
         # Assuming shape codes are populated elsewhere or are static. For now, just set the current text.
         self.shapeCodeSett.setCurrentText(str(self.settings_manager.get_setting("reinforcement/shapeCodeSett")))
+    
+    def safe_int(self, text):
+        if text.strip() == "":
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            raise ValueError("Invalid integer input")
+    def safe_float(self, text):
+        if text.strip() == "":
+            print("ONE TEXT IS EMPTY")
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            raise ValueError("Invalid float input")
+
+    def save_dim_settings(self):
+        shape_code = self.shapeCodeDimSett.currentText()
+        if shape_code not in SHAPE_CODE_LENGTH_MAP.keys():
+            QMessageBox.warning(self, "Input Error", "Please select a valid Shape Code.")
+            return
+        if self.chBoxAutoFillSett.isChecked():
+            try:
+                self.settings_manager.set_setting(f"reinforcement/{shape_code}", True)
+                a_val = self.safe_float(self.aSett.text())
+                if a_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/aSett", a_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/aSett", "")
+
+                b_val = self.safe_float(self.bSett.text())
+                if b_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/bSett", b_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/bSett", "")
+
+                c_val = self.safe_float(self.cSett.text())
+                if c_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/cSett", c_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/cSett", "")
+
+                d_val = self.safe_float(self.dSett.text())
+                if d_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/dSett", d_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/dSett", "")
+
+                e_val = self.safe_float(self.eSett.text())
+                if e_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/eSett", e_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/eSett", "")
+
+                f_val = self.safe_float(self.fSett.text())
+                if f_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/fSett", f_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/fSett", "")
+
+                r_val = self.safe_float(self.rSett.text())
+                if r_val is not None:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/rSett", r_val)
+                else:
+                    self.settings_manager.set_setting(f"reinforcement/{shape_code}/rSett", "")
+                QMessageBox.information(self, "Save Successful", "Auto-fill dimensions saved successfully")
+            except Exception as e:
+                QMessageBox.warning(self, "Input Error", f"{e} Please enter valid numbers for all dimension and bar count fields.")
+                return
 
     def save_settings(self):
         # Checkboxes
         print(f"Is autofill checked? {self.chBoxAutoFillSett.isChecked()}")
-        if self.chBoxAutoFillSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAutoFillSett"):
-            self.settings_manager.set_setting("reinforcement/chBoxAutoFillSett", self.chBoxAutoFillSett.isChecked())
-        if self.chBoxAutoGenSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAutoGenSett"):
-            self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
-        if self.chBoxAllowKeySett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxAllowKeySett"):
-            self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
-        if self.chBoxDisableCreateSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett"):
-            self.settings_manager.set_setting("reinforcement/chBoxDisableCreateSett", self.chBoxDisableCreateSett.isChecked())
-        if self.chBoxEnableWarningSett.isChecked() != self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett"):
-            self.settings_manager.set_setting("reinforcement/chBoxEnableWarningSett", self.chBoxEnableWarningSett.isChecked())
-        def safe_int(text):
-            if text.strip() == "":
-                return None
-            try:
-                return int(text)
-            except ValueError:
-                raise ValueError("Invalid integer input")
-        def safe_float(text):
-            if text.strip() == "":
-                print("ONE TEXT IS EMPTY")
-                return None
-            try:
-                return float(text)
-            except ValueError:
-                raise ValueError("Invalid float input")
+        self.settings_manager.set_setting("reinforcement/chBoxAutoFillSett", self.chBoxAutoFillSett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxAutoGenSett", self.chBoxAutoGenSett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxAllowKeySett", self.chBoxAllowKeySett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxDisableCreateSett", self.chBoxDisableCreateSett.isChecked())
+        self.settings_manager.set_setting("reinforcement/chBoxEnableWarningSett", self.chBoxEnableWarningSett.isChecked())
         if self.chBoxAutoFillSett.isChecked():
             try:
-                a_val = safe_float(self.aSett.text())
-                if a_val is not None:
-                    self.settings_manager.set_setting("reinforcement/aSett", a_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/aSett", "")
-
-                b_val = safe_float(self.bSett.text())
-                if b_val is not None:
-                    self.settings_manager.set_setting("reinforcement/bSett", b_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/bSett", "")
-
-                c_val = safe_float(self.cSett.text())
-                if c_val is not None:
-                    self.settings_manager.set_setting("reinforcement/cSett", c_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/cSett", "")
-
-                d_val = safe_float(self.dSett.text())
-                if d_val is not None:
-                    self.settings_manager.set_setting("reinforcement/dSett", d_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/dSett", "")
-
-                e_val = safe_float(self.eSett.text())
-                if e_val is not None:
-                    self.settings_manager.set_setting("reinforcement/eSett", e_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/eSett", "")
-
-                f_val = safe_float(self.fSett.text())
-                if f_val is not None:
-                    self.settings_manager.set_setting("reinforcement/fSett", f_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/fSett", "")
-
-                r_val = safe_float(self.rSett.text())
-                if r_val is not None:
-                    self.settings_manager.set_setting("reinforcement/rSett", r_val)
-                else:
-                    self.settings_manager.set_setting("reinforcement/rSett", "")
-                
                 if self.barSizeSett.currentText() != "":
                     try:
                         if int(''.join(filter(str.isdigit, self.barSizeSett.currentText()))) not in MIN_BEND_RADII.keys():
@@ -1405,7 +1481,7 @@ class SettingsScreen(QDialog):
                 else:
                     self.settings_manager.set_setting("reinforcement/shapeCodeSett", "")
 
-                no_of_bars = safe_int(self.noOfBarsSett.text())
+                no_of_bars = self.safe_int(self.noOfBarsSett.text())
                 if no_of_bars is not None:
                     self.settings_manager.set_setting("reinforcement/noOfBarsSett", no_of_bars)
                 else:
@@ -1455,6 +1531,7 @@ class SettingsScreen(QDialog):
         # ComboBoxes
         self.barSizeSett.setEnabled(is_autofill_enabled)
         self.shapeCodeSett.setEnabled(is_autofill_enabled)
+        self.shapeCodeDimSett.setEnabled(is_autofill_enabled)
 
 class SettingsManager:
     def __init__(self, organization="GenBBS", application="GenBBS"):
@@ -1466,17 +1543,17 @@ class SettingsManager:
             "reinforcement/chBoxAllowKeySett": False,
             "reinforcement/chBoxDisableCreateSett": False,
             "reinforcement/chBoxEnableWarningSett": False,
-            "reinforcement/aSett": "",
-            "reinforcement/bSett": "",
-            "reinforcement/cSett": "",
-            "reinforcement/dSett": "",
-            "reinforcement/eSett": "",
-            "reinforcement/fSett": "",
-            "reinforcement/rSett": "",
             "reinforcement/noOfBarsSett": "",
             "reinforcement/barSizeSett": "", # Default bar size
             "reinforcement/shapeCodeSett": "", # Default shape code
         }
+
+        # Add settings for each shape code in SHAPE_CODE_LENGTH_MAP, defaulting to False
+        for shape_code in SHAPE_CODE_LENGTH_MAP:
+            self._default_settings[f"reinforcement/{shape_code}"] = False
+            dim_setts = ["aSett","bSett","cSett","dSett","eSett","fSett","rSett"]
+            for dim_sett in dim_setts:
+                self._default_settings[f"reinforcement/{shape_code}/{dim_sett}"] = ""
         self._apply_default_settings_if_missing()
 
     def _apply_default_settings_if_missing(self):
@@ -1586,6 +1663,10 @@ class ExportSplashScreen(QDialog):
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
+        QApplication.processEvents()
+        if value == 100:
+            self.close()
+            QApplication.processEvents()
 
 # --- Main Application Window ---
 class ApplicationWindow(QMainWindow):

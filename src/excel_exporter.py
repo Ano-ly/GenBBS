@@ -6,7 +6,7 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.cell_range import CellRange
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QApplication
 from PySide6.QtCore import QObject, Signal
 from typing import List, Dict, Any, Union
 import math
@@ -106,11 +106,10 @@ class ExcelExporter(QObject):
                 print(f"\nCut Length: {current_cut_length_sum}, total_weight: {current_total_weight_sum}\n")
             else:
                 # Recursively call and add the returned sums
-                child_cut_length, child_total_weight = self.compute_summaries(child, element_quantities)
-                current_cut_length_sum += child_cut_length
-                current_total_weight_sum += child_total_weight
-        
-        return {"cut_length_sum": str(current_cut_length_sum), "total_weight_sum": str(current_total_weight_sum)}
+                summary_values = self.compute_summaries(child, element_quantities)
+                current_cut_length_sum += summary_values["cut_length_sum"]
+                current_total_weight_sum += summary_values["total_weight_sum"]
+        return {"cut_length_sum": current_cut_length_sum, "total_weight_sum": current_total_weight_sum}
     def _collect_hierarchical_data_recursive(self, item: Union[Project, CategoryHigher, CategoryLower, Element, Bar],
                                             level: int,
                                             parent_path: List[str],
@@ -143,23 +142,26 @@ class ExcelExporter(QObject):
        
         if isinstance(item, Element):
             btw_headers = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":"Type and Bar Size", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
+            item.sort_bars()
             hierarchical_rows.append(btw_headers)
          
         if not isinstance(item, Bar):
+            for child in item.get_children():
+                self._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities, summary_ids)
+
+        if not isinstance(item, Bar) and item.id in summary_ids:
             if item.id in summary_ids:
                 summaries_dict = self.compute_summaries(item, element_quantities)
                 cut_length_sum = summaries_dict["cut_length_sum"]
                 total_weight_sum = summaries_dict["total_weight_sum"]
-                btw_summary_name = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter":f"{item.name.upper()} SUMMARY", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":"Total Length", "unit_weight":"unit_weight", "total_weight":"Total Weight", "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
-                # hierarchical_rows.append(btw_summary_name)
-                btw_summaries = {"Type":"Type", "Level": level + 1, "Name":"Name", "Path":"Path", "Quantity":"Quantity", "bar_mark":"Bar Mark", "diameter": "TOTAL", "number_of_bars":"No. in Each", "total_no_of_bars":"Total No. of Bars", "cut_length":"Cut Length", "total_length":str(cut_length_sum), "unit_weight":"unit_weight", "total_weight":str(total_weight_sum), "shape_code":"Shape Code", "lengths":"Lengths", "Shape":"Shape"}
-                # hierarchical_rows.append(btw_summaries)
-                print(btw_summary_name, btw_summaries)
-            for child in item.get_children():
-                self._collect_hierarchical_data_recursive(child, level + 1, current_path, hierarchical_rows, element_quantities, summary_ids)
-
+                btw_summary_name = {"Type":"SummaryName", "Level": level + 1, "diameter":f"{item.name.upper()} SUMMARY"}
+                btw_summaries = {"Type":"Summary", "Level": level + 1, "total_length":str(int(cut_length_sum)), "total_weight":str(int(total_weight_sum)),}
+                hierarchical_rows.append(btw_summary_name)
+                hierarchical_rows.append(btw_summaries)
+                # print(btw_summary_name, btw_summaries)
     def export_project_bars_to_excel(self, project, file_path, summaries):
         self.progress_updated.emit(0)
+        QApplication.processEvents()
         if not project:
             QMessageBox.warning(None, "Export Error", "No project loaded to export.")
             return
@@ -167,6 +169,7 @@ class ExcelExporter(QObject):
         element_quantities = {}
         self._collect_element_quantities(project, element_quantities)
         self.progress_updated.emit(10)
+        QApplication.processEvents()
 
         summary_ids = []
         for item in summaries:
@@ -180,6 +183,7 @@ class ExcelExporter(QObject):
         print(hierarchical_rows)
         print("\n\n")
         self.progress_updated.emit(30)
+        QApplication.processEvents()
 
         ordered_headers = ["Type", "Level", "Name", "Path", "Quantity", "bar_mark", "diameter", "number_of_bars", "total_no_of_bars", "cut_length", "total_length", "unit_weight", "total_weight", "shape_code", "lengths", "image_path", "Shape"]
         df = pd.DataFrame(hierarchical_rows, columns=ordered_headers)
@@ -188,12 +192,14 @@ class ExcelExporter(QObject):
             with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
                 df.to_excel(writer, sheet_name='Project Data', index=False)
                 self.progress_updated.emit(50)
+                QApplication.processEvents()
                 workbook = writer.book
                 worksheet = writer.sheets['Project Data']
 
                 #styles
                 header_font = Font(bold=True)
                 category_font = Font(bold=True, size=16, underline="single")
+                summary_font = Font(bold=True, size=16)
                 element_font = Font(size=12, underline="single")
                 bar_font = Font(size=10)
                 project_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid") #
@@ -213,6 +219,8 @@ class ExcelExporter(QObject):
                 proper_cell_headers = {"bar_mark": "Bar Mark", "bar_id": "Bar ID", "number_of_bars":"No. in Each", "total_no_of_bars" : "Total No. of Bars" ,"total_length" : "Total Length", "cut_length" : "Cut Length", "unit_weight": "Unit Weight", "total_weight": "Total Weight", "diameter" : "Type and Bar Size", "lengths": "Lengths"}
                 list_of_names = dict()
                 list_of_quantities = dict()
+                list_of_summaries = dict()
+                list_of_summary_names = dict()
                 max_widths_of_columns = dict()
 
                 for row in worksheet.iter_rows():
@@ -222,7 +230,7 @@ class ExcelExporter(QObject):
                     row_image = row[col_map["image_path"]].value
 
                     # Header row formatting
-                    if row_index == 1 or row_type == "Type":
+                    if row_index == 1 or row_type == "Type" or row_type == "Summary" or row_type == "SummaryName" :
                         for cell in row:
                             cell.font = header_font
                             cell.border = thin_border                       
@@ -232,12 +240,20 @@ class ExcelExporter(QObject):
                     center_align = Alignment(horizontal="center", vertical="center")
                     left_align = Alignment(horizontal="left", vertical="center")
                     #Store the names of sub headers
-                    if row_type != "Bar" and row_type != "Type":
+                    if row_type != "Bar" and row_type != "Type" and row_type != "Summary"and row_type != "SummaryName":
                         row_name = row[col_map["Name"]].value
                         list_of_names[row_index] = row_name.upper()
                         if row_type == "Element":
                             row_quantity = row[col_map["Quantity"]].value
                             list_of_quantities[row_index] = row_quantity
+                    if row_type == "SummaryName":
+                        summary_name = row[col_map["diameter"]].value
+                        list_of_summary_names[row_index] = summary_name
+                    if row_type == "Summary":
+                        length_summary = row[col_map["total_length"]].value
+                        weight_summary = row[col_map["total_weight"]].value
+                        list_of_summaries[row_index] = {"total_length": length_summary, "total_weight": weight_summary}
+                    print(list_of_summary_names, list_of_summaries)
                     
                     fill = normal_fill
                     font = None
@@ -251,13 +267,15 @@ class ExcelExporter(QObject):
                         font = element_font
                     elif row_type == "Bar":
                         font = bar_font
+                    elif row_type == "Summary" or row_type == "SummaryName":
+                        font = summary_font
                     for cell in row:
                         #Set alignment
                         column_name = next((k for k, v in col_map.items() if v == cell.column - 1), None)
                         max_widths_of_columns[column_name] = max(max_widths_of_columns.get(column_name, 0), len(str(cell.value)))
                         # print(cell.value)
                         # print(max_widths_of_columns)
-                        if row_type == "Bar" or row_type == "Type":
+                        if row_type == "Bar" or row_type == "Type" or row_type == "Summary" or row_type == "SummaryName":
                             cell.alignment = center_align
                         else:
                             cell.alignment = left_align
@@ -330,9 +348,19 @@ class ExcelExporter(QObject):
                                                 bottom=Side(style='thin'))
                             qt_cell.border = no_border
                             name_cell.border = no_border2
-                            if row_index not in list_of_quantities.keys():
+                            #add summaries
+                            if row_index not in list_of_quantities.keys() and row_index not in list_of_summaries.keys() and row_index not in list_of_summary_names.keys():
                                 worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
                                 worksheet.cell(row=row_index, column=2, value=list_of_names[row_index])
+                            elif row_index in list_of_summary_names.keys():
+                                worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
+                                worksheet.cell(row=row_index, column=2, value=list_of_summary_names[row_index])
+                            elif row_index in list_of_summaries.keys():
+                                summary_dict = list_of_summaries[row_index]
+                                worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=5)
+                                worksheet.cell(row=row_index, column=2, value="TOTAL")
+                                worksheet.cell(row=row_index, column=6, value=str(summary_dict["total_length"]))
+                                worksheet.cell(row=row_index, column=7, value=str(summary_dict["total_weight"]))
                             else:
                                 worksheet.merge_cells(start_row=row_index, start_column=2, end_row=row_index, end_column=worksheet.max_column)
                                 worksheet.cell(row=row_index, column=1, value=f"{list_of_quantities[row_index]} Nos")
@@ -344,10 +372,10 @@ class ExcelExporter(QObject):
                 #Remove initial header
                 # worksheet.delete_rows(1)
 
-                
-                QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
             self.progress_updated.emit(100)
+            QApplication.processEvents()
             shutil.rmtree(self.temp_dir_for_img, ignore_errors=True)
+            QMessageBox.information(None, "Export Successful", f"Project data exported to {file_path}")
         except Exception as e:
             QMessageBox.critical(None, "Export Error", f"Failed to export data: {e}")
         finally:

@@ -507,6 +507,9 @@ background-color: rgb(207, 207, 207);
                  <property name="editable">
                   <bool>true</bool>
                  </property>
+                 <property name="insertPolicy">
+                  <enum>QComboBox::InsertPolicy::NoInsert</enum>
+                 </property>
                 </widget>
                </item>
                <item>
@@ -662,6 +665,9 @@ background-color: rgb(207, 207, 207);
                  </property>
                  <property name="maxVisibleItems">
                   <number>8</number>
+                 </property>
+                 <property name="insertPolicy">
+                  <enum>QComboBox::InsertPolicy::NoInsert</enum>
                  </property>
                  <property name="minimumContentsLength">
                   <number>0</number>
@@ -1551,6 +1557,12 @@ background-color: rgb(207, 207, 207);
               <italic>false</italic>
               <bold>false</bold>
              </font>
+            </property>
+            <property name="toolTip">
+             <string>Create Bar</string>
+            </property>
+            <property name="toolTipDuration">
+             <number>2000</number>
             </property>
             <property name="layoutDirection">
              <enum>Qt::LayoutDirection::RightToLeft</enum>

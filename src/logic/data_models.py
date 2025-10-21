@@ -198,6 +198,25 @@ class Element:
     def get_children(self) -> list[Bar]:
         return self.bars
 
+    def sort_bars(self):
+        """
+        Sorts the bars in ascending order of bar_mark.
+        If any bar's shape code is in [51, 52, 56, 63, 64, 75] and bar_mark is 1,
+        that bar is placed first in the list.
+        """
+        priority_shape_codes = {51, 52, 56, 63, 64, 75}
+        priority_bars = []
+        other_bars = []
+
+        for bar in self.bars:
+            if bar.bar_mark == 1 and int(bar.shape_code) in priority_shape_codes:
+                priority_bars.append(bar)
+            else:
+                other_bars.append(bar)
+
+        other_bars.sort(key=lambda bar: bar.bar_mark)
+        self.bars = priority_bars + other_bars
+
 
 class CategoryLower:
     """
