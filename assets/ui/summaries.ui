@@ -70,8 +70,22 @@
      </item>
      <item>
       <widget class="QTreeWidget" name="treeWidgetSum">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+       </property>
        <property name="editTriggers">
         <set>QAbstractItemView::EditTrigger::EditKeyPressed</set>
+       </property>
+       <property name="tabKeyNavigation">
+        <bool>true</bool>
        </property>
        <property name="alternatingRowColors">
         <bool>true</bool>
@@ -79,9 +93,12 @@
        <property name="selectionMode">
         <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
        </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
        <column>
         <property name="text">
-         <string>Select the Categories to be summarised in the Bar Bending Schedule</string>
+         <string>Select the Categories or Elements to be summarised in the Bar Bending Schedule</string>
         </property>
        </column>
       </widget>

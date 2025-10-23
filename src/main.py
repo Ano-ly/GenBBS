@@ -6,6 +6,7 @@ import src.resources
 from src.logic.data_models import Project, CategoryHigher, CategoryLower, Element, Bar
 import json
 import os
+import sys
 from src.config.config import MIN_BEND_RADII, SHAPE_CODE_LENGTH_MAP, SHAPE_CODE_FORMULA_STRINGS
 from src.logic.bs8666_validator import validate_bar_dimensions
 from src.excel_exporter import ExcelExporter
@@ -53,6 +54,7 @@ class MainMenuScreen(QWidget):
         if file_dialog.exec():
             selected_file = file_dialog.selectedFiles()[0]
             self.load_project_from_file(selected_file)
+            print(selected_file)
 
     def load_project_from_file(self, file_path):
         try:
@@ -254,6 +256,9 @@ class Category1Screen(QWidget):
     def update_selected_item(self):
         selected_items = self.tree_widget.selectedItems()
         if selected_items:
+            self.input_new_element_catg1.clear()
+            self.input_new_sub_catg1.clear()
+            self.inputElementQtCatg1.clear()
             selected_object = selected_items[0].data(0, Qt.UserRole)
             if selected_object:
                 text_to_fill = selected_object.name
@@ -1010,16 +1015,12 @@ class ReinforcementScreen(QWidget):
         self.label_formula_reinf.setText(f"Formula: {formula}")
 
     def create_bar_from_inputs(self):
-        print("Create Bar button clicked!")
         self._reset_dimension_input_styles() # Reset styles at the beginning
-
         # Retrieve values from UI elements
         bar_size_text = self.input_bar_size_reinf.currentText()
         shape_code = self.shape_code_reinf.currentText()
         bar_mark_text = self.input_bar_mark.text()
         no_of_bars_text = self.input_no_of_bars.text()
-        print(f"Bar Size: {bar_size_text}, Shape Code: {shape_code}, Bar Mark: {bar_mark_text}, No of Bars: {no_of_bars_text}")
-
         dimensions = {
             "A": self.a_dimension.text(),
             "E": self.e_dimension.text(),
@@ -1029,10 +1030,12 @@ class ReinforcementScreen(QWidget):
             "R": self.r_dimension.text(),
             "D": self.d_dimension.text(),
         }
-        print(dimensions)
         
         # Basic validation and conversion
         try:
+            if not bar_size_text or not shape_code:
+                QMessageBox.warning(self, "Input Error", "Please select both Bar Size and Shape Code.")
+                return
             if int(''.join(filter(str.isdigit, bar_size_text))) not in MIN_BEND_RADII.keys():
                 QMessageBox.warning(self, "Input Error", "Please select a valid Bar Size.")
                 return
@@ -1041,98 +1044,101 @@ class ReinforcementScreen(QWidget):
                 return
             bar_mark = int(bar_mark_text)
             number_of_bars = int(no_of_bars_text)
-            # Convert dimensions to float, only if they are not empty
+            # Filter out unrequired dimensions. Ensure required dimensions are not empty or equal to zero. Convert required dimensions to float
             lengths = {}
             for key, value in dimensions.items():
-                if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (float(value) == 0 or value == ""):
+                if key in SHAPE_CODE_LENGTH_MAP[shape_code] and (float(value) == 0 or value == "") and shape_code != "99":
                     QMessageBox.warning(self, "Input Error", "Please enter valid numbers for dimensions.")
                     return
                 if value and key in SHAPE_CODE_LENGTH_MAP[shape_code]:
                     lengths[key] = float(value)
 
+            # Perform BS 8666:2020 validation
+            enable_warning = self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett") == "true"
+            is_valid, validation_warnings, aff_dims = validate_bar_dimensions(dimensions, shape_code, bar_size_text)
+            if validation_warnings and enable_warning:
+                warning_message = "\n".join(validation_warnings)
+                QMessageBox.warning(self, "Validation Warning", warning_message)
+                # Apply red border to non-conforming dimension input fields
+                dimension_input_fields = {
+                    "A": self.a_dimension, "B": self.b_dimension, "C": self.c_dimension,
+                    "D": self.d_dimension, "E": self.e_dimension, "F": self.f_dimension,
+                    "R": self.r_dimension
+                }
+                # Check setting to prevent bar creation
+                disable_create = self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett") == "true"
+                if disable_create:
+                    for dim_code, field in dimension_input_fields.items():
+                        if dim_code in aff_dims:
+                            field.setStyleSheet("border: 1px solid red;")
+                        else:
+                            field.setStyleSheet("")
+                    QMessageBox.information(self, "Bar Not Created", "Bar creation prevented due to non-conforming dimensions.")
+                    return
+
+            selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
+            if selected_rows: # Update existing bar
+                row = selected_rows[0].row()
+                if 0 <= row < len(self.element.bars):
+                    bar_to_update = self.element.bars[row]
+                    # Temporarily apply new values to check cut length
+                    temp_bar = Bar(
+                        bar_mark=bar_mark,
+                        shape_code=shape_code,
+                        diameter=bar_size_text,
+                        lengths=lengths,
+                        number_of_bars=number_of_bars,
+                        parent_tree=bar_to_update.parent_tree
+                    )
+                    if temp_bar.cut_length < 0:
+                        QMessageBox.warning(self, "Invalid Dimensions", "The provided dimensions result in a negative cut length. Please check your input.")
+                        return
+                    # All good, commit the changes
+                    bar_to_update.bar_mark = bar_mark
+                    bar_to_update.shape_code = shape_code
+                    bar_to_update.diameter = bar_size_text
+                    bar_to_update.lengths = lengths
+                    bar_to_update.number_of_bars = number_of_bars
+                    bar_to_update.recalculate_properties() # Recalculate properties after update
+                    self.app_window.project_modified = True
+                    self.populate_bars_table()
+                    self.clear_input_fields()
+                    # self._apply_settings()
+                    self.table_widget_reinf.clearSelection() # Clear selection after update
+                    self._reset_dimension_input_styles()
+                    QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
+                else:
+                    QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
+            else: # Create new bar
+                # Create Bar object
+                new_bar = Bar(
+                    bar_mark=bar_mark,
+                    shape_code=shape_code,
+                    diameter=bar_size_text, # Assuming bar_size is the diameter string (e.g., 'Y10')
+                    lengths=lengths,
+                    number_of_bars=number_of_bars,
+                    parent_tree=self.element.parent_tree + [{'id': self.element.id, 'name': self.element.name, 'type': 'Element'}]
+                )
+
+                # Add bar to the current element
+                if self.element:
+                    self.element.add_bar(new_bar)
+                    self.app_window.project_modified = True
+                    self.populate_bars_table()
+                    self.clear_input_fields() # Clear input fields after successful bar creation
+                    print("\n\nJust cleared\n\n")
+                    self._reset_dimension_input_styles()
+                    # self._apply_settings()
+                    # QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
+                else:
+                    QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
+                    return
+            self._reset_dimension_input_styles()
+
         except Exception as e:
             print(f"{e}\n There was an error here \n")
             QMessageBox.warning(self, "Input Error", "Please enter valid numbers for Bar Mark, Number of Bars, and dimensions.")
             return
-
-        if not bar_size_text or not shape_code:
-            QMessageBox.warning(self, "Input Error", "Please select both Bar Size and Shape Code.")
-            return
-
-        # Perform BS 8666:2020 validation
-        enable_warning = self.settings_manager.get_setting("reinforcement/chBoxEnableWarningSett") == "true"
-        is_valid, validation_warnings, aff_dims = validate_bar_dimensions(dimensions, shape_code, bar_size_text)
-
-        if validation_warnings and enable_warning:
-            warning_message = "\n".join(validation_warnings)
-            QMessageBox.warning(self, "Validation Warning", warning_message)
-
-            # Apply red border to non-conforming dimension input fields
-            dimension_input_fields = {
-                "A": self.a_dimension, "B": self.b_dimension, "C": self.c_dimension,
-                "D": self.d_dimension, "E": self.e_dimension, "F": self.f_dimension,
-                "R": self.r_dimension
-            }
-
-
-            # Check setting to prevent bar creation
-            disable_create = self.settings_manager.get_setting("reinforcement/chBoxDisableCreateSett") == "true"
-            if disable_create:
-                for dim_code, field in dimension_input_fields.items():
-                    if dim_code in aff_dims:
-                        field.setStyleSheet("border: 1px solid red;")
-                    else:
-                        field.setStyleSheet("")
-                QMessageBox.information(self, "Bar Not Created", "Bar creation prevented due to non-conforming dimensions.")
-                return
-
-        selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
-        if selected_rows: # Update existing bar
-            row = selected_rows[0].row()
-            if 0 <= row < len(self.element.bars):
-                bar_to_update = self.element.bars[row]
-                bar_to_update.bar_mark = bar_mark
-                bar_to_update.shape_code = shape_code
-                bar_to_update.diameter = bar_size_text
-                bar_to_update.lengths = lengths
-                bar_to_update.number_of_bars = number_of_bars
-                bar_to_update.recalculate_properties() # Recalculate properties after update
-                self.app_window.project_modified = True
-                self.populate_bars_table()
-                self.clear_input_fields()
-                # self._apply_settings()
-                self.table_widget_reinf.clearSelection() # Clear selection after update
-                self._reset_dimension_input_styles()
-                QMessageBox.information(self, "Bar Updated", f"Bar Mark {bar_mark} updated successfully.")
-            else:
-                QMessageBox.warning(self, "Update Error", "Selected row does not correspond to a valid bar.")
-        else: # Create new bar
-            # Create Bar object
-            new_bar = Bar(
-                bar_mark=bar_mark,
-                shape_code=shape_code,
-                diameter=bar_size_text, # Assuming bar_size is the diameter string (e.g., 'Y10')
-                lengths=lengths,
-                number_of_bars=number_of_bars,
-                parent_tree=self.element.parent_tree + [{'id': self.element.id, 'name': self.element.name, 'type': 'Element'}]
-            )
-
-            # Add bar to the current element
-            if self.element:
-                self.element.add_bar(new_bar)
-                self.app_window.project_modified = True
-                self.populate_bars_table()
-                self.clear_input_fields() # Clear input fields after successful bar creation
-                print("\n\nJust cleared\n\n")
-                self._reset_dimension_input_styles()
-                # self._apply_settings()
-                # QMessageBox.information(self, "Bar Created", f"New Bar Mark {bar_mark} created successfully.")
-            else:
-                QMessageBox.warning(self, "No Element Selected", "Please select an element before adding bars.")
-                return
-        self._reset_dimension_input_styles()
-        # Placeholder for UI update logic
-        pass
 
     def _reset_dimension_input_styles(self):
         dimension_fields = [
@@ -1312,7 +1318,7 @@ class SettingsScreen(QDialog):
         
         image_base_path = ":/images/"
         self.shapeCodeSett.addItem("")
-        self.shapeCodeDimSett.addItem("")
+        # self.shapeCodeDimSett.addItem("")
         for code in shape_codes:
             image_path = f"{image_base_path}{code}.jpg"
             pixmap = QPixmap(image_path)
@@ -1759,8 +1765,7 @@ class ApplicationWindow(QMainWindow):
 
 # --- Application Entry Point ---
 if __name__ == "__main__":
-    app = QApplication([])
-
+    app = QApplication(sys.argv)
     # Create a QPixmap from GenBBS_loading.ui for the QSplashScreen
     temp_loader = QUiLoader()
     temp_loading_widget = temp_loader.load(":/ui/GenBBS_loading.ui")
@@ -1780,6 +1785,10 @@ if __name__ == "__main__":
 
     # Create and show the main application window
     main_application_window = ApplicationWindow(splash_screen)
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]
+        print(file_path)
+        main_application_window.main_menu_screen.load_project_from_file(file_path)
     main_application_window.show()
     
 

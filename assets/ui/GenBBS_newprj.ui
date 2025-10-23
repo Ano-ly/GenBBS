@@ -572,8 +572,8 @@ border-image: url(:/images/Reinf_Backdrop.jpeg) 0 0 0 0 stretch stretch;
             </property>
             <property name="maximumSize">
              <size>
-              <width>150</width>
-              <height>150</height>
+              <width>100</width>
+              <height>100</height>
              </size>
             </property>
             <property name="autoFillBackground">

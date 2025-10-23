@@ -483,7 +483,7 @@ background-color: rgb(207, 207, 207);
                   </font>
                  </property>
                  <property name="text">
-                  <string>Bar Size</string>
+                  <string>Bar Type and Size</string>
                  </property>
                 </widget>
                </item>
@@ -1703,7 +1703,7 @@ background-color: rgb(207, 207, 207);
              <bool>false</bool>
             </property>
             <property name="dragDropMode">
-             <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+             <enum>QAbstractItemView::DragDropMode::NoDragDrop</enum>
             </property>
             <property name="defaultDropAction">
              <enum>Qt::DropAction::IgnoreAction</enum>

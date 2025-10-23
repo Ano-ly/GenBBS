@@ -34,7 +34,7 @@ SHAPE_CODE_LENGTH_MAP = {
     "64": ["A", "B", "C", "D", "E", "F"],
     "67": ["A"],
     "75": ["A", "B"],
-    "77": ["A", "C"],
+    "77": ["A", "B", "C"],
     "98": ["A", "B", "C", "D"],
     "99": ["A", "B", "C", "D", "E", "F", "R"] # For all other shapes where standard shapes cannot be used, no specific lengths
 }

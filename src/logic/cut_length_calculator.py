@@ -396,7 +396,7 @@ def calculate_cut_length_shape_77(lengths: dict, diameter: float, bend_radius: f
     Calculates cut length for Shape Code 77 (helical/spiral).
     Formula: Cπ(A-d)
     Where B is greater than A/5 this equation no longer applies, in which case the following formula may be used:
-    L = C((π(A -d))² + B²)0.5
+    L = C((π(A -d))² + B²)^0.5
     """
     A = lengths.get("A", 0)
     B = lengths.get("B", 0)
