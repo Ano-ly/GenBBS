@@ -1075,24 +1075,23 @@ class ReinforcementScreen(QWidget):
                             field.setStyleSheet("")
                     QMessageBox.information(self, "Bar Not Created", "Bar creation prevented due to non-conforming dimensions.")
                     return
-
+            temp_bar = Bar(
+                bar_mark=bar_mark,
+                shape_code=shape_code,
+                diameter=bar_size_text,
+                lengths=lengths,
+                number_of_bars=number_of_bars,
+                parent_tree=[]
+            )
+            if temp_bar.cut_length < 0:
+                QMessageBox.warning(self, "Invalid Dimensions", "The provided dimensions result in a negative cut length. Please check your input.")
+                return
             selected_rows = self.table_widget_reinf.selectionModel().selectedRows()
             if selected_rows: # Update existing bar
                 row = selected_rows[0].row()
                 if 0 <= row < len(self.element.bars):
                     bar_to_update = self.element.bars[row]
                     # Temporarily apply new values to check cut length
-                    temp_bar = Bar(
-                        bar_mark=bar_mark,
-                        shape_code=shape_code,
-                        diameter=bar_size_text,
-                        lengths=lengths,
-                        number_of_bars=number_of_bars,
-                        parent_tree=bar_to_update.parent_tree
-                    )
-                    if temp_bar.cut_length < 0:
-                        QMessageBox.warning(self, "Invalid Dimensions", "The provided dimensions result in a negative cut length. Please check your input.")
-                        return
                     # All good, commit the changes
                     bar_to_update.bar_mark = bar_mark
                     bar_to_update.shape_code = shape_code

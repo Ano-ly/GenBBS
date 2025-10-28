@@ -536,7 +536,7 @@ color: rgb(255, 255, 255)</string>
                <set>Qt::AlignmentFlag::AlignJustify|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="placeholderText">
-               <string>Enter name of new category</string>
+               <string>Enter name of new category, i.e, First floor</string>
               </property>
               <property name="clearButtonEnabled">
                <bool>true</bool>
@@ -999,7 +999,7 @@ color: rgb(255, 255, 255)</string>
                <set>Qt::AlignmentFlag::AlignJustify|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="placeholderText">
-               <string>Enter name of structural element</string>
+               <string>Enter name of structural element, i.e, Beam 01</string>
               </property>
               <property name="clearButtonEnabled">
                <bool>true</bool>
@@ -1138,7 +1138,7 @@ color: rgb(255, 255, 255)</string>
                <set>Qt::AlignmentFlag::AlignJustify|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="placeholderText">
-               <string>Quantity</string>
+               <string>Quantity, i.e, 3</string>
               </property>
               <property name="clearButtonEnabled">
                <bool>true</bool>
