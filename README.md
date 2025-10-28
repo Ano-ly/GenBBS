@@ -6,7 +6,7 @@ Welcome to GenBBS! This application generates a bar bending schedule in Excel fo
 
 This guide will walk you through how to use the application to manage your reinforcement bar projects and export them to Excel.
 
-#1. Getting Started
+# 1. Getting Started
 
 When you launch GenBBS, you'll be presented with the Main Menu Screen.
 
@@ -15,7 +15,7 @@ Create New Project: Click the "+" button to start a fresh project. You'll be pro
 Open Existing Project: Click the "Open Existing File" button to load a previously saved project. A file dialog will appear, allowing you to navigate to your `.gbbs` project file.
 
 
-#2. Project Management
+# 2. Project Management
 
 After creating or opening a project, you'll be taken to the Category Screen, which displays your project's hierarchical structure.
 
@@ -73,7 +73,7 @@ Save Button: Click the "Save" button on the Category Screen to save your current
 Automatic Prompt: If you try to go back to the Main Menu or close the application with unsaved changes, you will be prompted to save your project.
 
 
-#3. Reinforcement Bar Details
+# 3. Reinforcement Bar Details
 
 When you double-click an Element in the Category Screen, you'll enter the Reinforcement Screen for that element.
 
@@ -100,7 +100,7 @@ Click Delete: Click the Delete button on the bottom left. The selected bar will 
 Click on the header of any column to sort bars in ascending or descending order based on that column.
 
 
-#4. Exporting to Excel
+# 4. Exporting to Excel
 
 From the Category Screen, you can export your entire project data, including all reinforcement bar details and their visual shapes, to an Excel spreadsheet.
 
@@ -119,7 +119,7 @@ From the Category Screen, you can export your entire project data, including all
 
 5. Confirmation: Once the export is complete, a message will confirm the successful creation of the Excel file.
 
-#5. Settings
+# 5. Settings
 - Enable auto-generation of bar mark
 - Enable warnings for bar dimensions
 - Disable bar creation where warnings exist, i.e, bar will not be     created when a warning exists for any dimension in that bar.
@@ -128,7 +128,7 @@ From the Category Screen, you can export your entire project data, including all
   * Press Delete to delete bar 
 - Automatically input shape code dimensions and other bar information
 
-#6. More Information
+# 6. More Information
 - Minimum radii for bent bars as obtained from BS 8666 - 2020 Table 2
 - Density of steel (7850 kg/m³)
 - Values of q as obtained from BS 8666 - 2020
@@ -140,4 +140,5 @@ LinkedIn
 Mail: amarachiuvere@gmail.com
 
 © 2025 Amarachi Uvere. All rights reserved.
+
 
