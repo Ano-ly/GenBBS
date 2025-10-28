@@ -1,6 +1,4 @@
-GenBBS User Guide
-
-![GenBBS Logo](assets/images/GenBBS Logo.png)
+<img width="515" height="484" alt="GenBBS Logo" src="https://github.com/user-attachments/assets/9df0e4b9-cb54-4751-88f2-ce131c1673dc" />
 
 Welcome to GenBBS! This application generates a bar bending schedule in Excel format, using bar information (bar diameter and type, lengths, etc). The application uses shape code formulas from BS 8666:2020 to calculate bar cut lengths.
 
@@ -20,7 +18,7 @@ Open Existing Project: Click the "Open Existing File" button to load a previousl
 After creating or opening a project, you'll be taken to the Category Screen, which displays your project's hierarchical structure.
 
 
-2.1 Project Structure
+## 2.1 Project Structure
 
 Your project is organized in a tree-like structure:
 
@@ -29,12 +27,12 @@ Category (Higher): Major sections within your project, i.e first floor
 Category (Lower): Sub-sections within a Higher Category, containing elements, i.e, first floor beams
 Element: Specific components or parts that contain reinforcement bars, i.e, Beam 01
 
-2.2 Navigating the Project Tree
+## 2.2 Navigating the Project Tree
 
 The right panel displays your project's hierarchy. Click on any item (Project, Category, Element) to select it. Double-clicking an Element will take you to the Reinforcement Screen for that specific element.
 
 
-2.3 Adding Items
+## 2.3 Adding Items
 
 1. Select a Parent: Click on the item in the tree where you want to add a new sub-item.
 
@@ -52,12 +50,12 @@ The right panel displays your project's hierarchy. Click on any item (Project, C
 
 This is because once an element is created in a category, it is automatically converted into a lower-type category which can contain only elements.
 
-2.4 Renaming Items
+## 2.4 Renaming Items
 
 Click on the item in the tree which you wish to rename. In the left panel, click on the edit button at the top right. Rename as desired 
 
 
-2.5 Deleting Items
+## 2.5 Deleting Items
 
 1.  Select Item: Click on the item you wish to delete in the project tree.
 
@@ -66,7 +64,7 @@ Click on the item in the tree which you wish to rename. In the left panel, click
 3.  Confirm: Click "Yes" to permanently delete the item and all its contents. (Note: You cannot delete the root Project item).
 
 
-2.6 Saving Your Project
+## 2.6 Saving Your Project
 
 Save Button: Click the "Save" button on the Category Screen to save your current project progress. If it's a new project, you'll be prompted to choose a file name and location.
 
@@ -77,7 +75,7 @@ Automatic Prompt: If you try to go back to the Main Menu or close the applicatio
 
 When you double-click an Element in the Category Screen, you'll enter the Reinforcement Screen for that element.
 
-3.1 Adding and Editing Bars
+## 3.1 Adding and Editing Bars
 
 Add New Bar: Click the "Done" button to add a new reinforcement bar to the current element. A new row will appear in the table.
 
@@ -89,13 +87,13 @@ Edit Bar Properties: Click on any cell in the table to edit its value. This incl
 Bar Image Preview: As you enter the shape code and dimensions, a visual representation of the bar will be displayed, helping you verify the shape.
 
 
-3.2 Deleting Bars
+## 3.2 Deleting Bars
 
 Select Row: Click on any cell in the row of the bar you wish to delete.
 
 Click Delete: Click the Delete button on the bottom left. The selected bar will be removed from the element.
 
-3.3 Sorting Bars
+## 3.3 Sorting Bars
 
 Click on the header of any column to sort bars in ascending or descending order based on that column.
 
@@ -140,5 +138,6 @@ LinkedIn
 Mail: amarachiuvere@gmail.com
 
 © 2025 Amarachi Uvere. All rights reserved.
+
 
 
